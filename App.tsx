@@ -2,7 +2,6 @@ import React from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -42,10 +41,6 @@ function AppContent() {
   const exerciseColumns = buildExerciseColumns(tracker.weekExerciseData);
   const foodColumns = buildFoodColumns(tracker.weekFoodData);
 
-  const draftHint = tracker.currentSetDraft
-    .map((v, i) => (i === tracker.currentExerciseIndex ? '?' : v))
-    .join(' ');
-
   return (
     <MobileScreen>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -60,7 +55,6 @@ function AppContent() {
               columns={exerciseColumns}
               maxRows={MAX_SETS}
               onPress={tracker.submitExercise}
-              hint="тап = ОК"
               flex
             />
             <CounterControl
@@ -68,7 +62,6 @@ function AppContent() {
               value={tracker.exerciseCounter}
               onDecrement={() => tracker.adjustExercise(-1)}
               onIncrement={() => tracker.adjustExercise(1)}
-              subtitle={`${tracker.currentExerciseLabel} · ${tracker.todaySetsCount + 1} · [${draftHint}]`}
               compact
             />
           </View>
@@ -82,7 +75,6 @@ function AppContent() {
               value={tracker.foodCounter}
               onDecrement={() => tracker.adjustFood(-10)}
               onIncrement={() => tracker.adjustFood(10)}
-              subtitle={`приём ${tracker.todayMealsCount + 1} · г`}
               compact
             />
             <WeekTable
@@ -92,7 +84,6 @@ function AppContent() {
               columns={foodColumns}
               maxRows={MAX_MEALS}
               onPress={tracker.submitFood}
-              hint="тап = ОК"
               flex
             />
           </View>

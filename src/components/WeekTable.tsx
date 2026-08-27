@@ -18,7 +18,6 @@ interface WeekTableProps {
   columns: { items: (string | number)[][]; sums: number[] };
   maxRows: number;
   onPress: () => void;
-  hint?: string;
   flex?: boolean;
 }
 
@@ -37,11 +36,9 @@ export function WeekTable({
   columns,
   maxRows,
   onPress,
-  hint,
   flex = false,
 }: WeekTableProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
-  const sumLabel = variant === 'exercise' ? 'суммы' : 'сумма';
   const rows = Array.from({ length: maxRows }, (_, rowIdx) => rowIdx);
 
   return (
@@ -54,10 +51,6 @@ export function WeekTable({
         pressed && styles.containerPressed,
       ]}
     >
-      {hint ? (
-        <Text style={[styles.hint, { color: palette.text }]}>{hint}</Text>
-      ) : null}
-
       <View style={[styles.body, flex && styles.bodyFlex]}>
         {/* Заголовок */}
         <View style={styles.row}>
@@ -124,9 +117,7 @@ export function WeekTable({
 
         {/* Суммы */}
         <View style={[styles.row, styles.sumRow]}>
-          <View style={styles.cornerCell}>
-            <Text style={[styles.sumLabel, { color: palette.primary }]}>{sumLabel}</Text>
-          </View>
+          <View style={styles.cornerCell} />
           {columns.sums.map((sum, colIdx) => {
             const day = weekDays[colIdx];
             const key = dateKey(day);
@@ -182,13 +173,6 @@ const styles = StyleSheet.create({
   },
   containerPressed: {
     opacity: 0.85,
-  },
-  hint: {
-    fontSize: 8,
-    textAlign: 'center',
-    marginBottom: 2,
-    opacity: 0.65,
-    letterSpacing: 0.3,
   },
   body: {},
   bodyFlex: {
@@ -248,10 +232,6 @@ const styles = StyleSheet.create({
   sumRow: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
-  },
-  sumLabel: {
-    fontSize: 7,
-    fontWeight: '700',
   },
   sumText: {
     fontSize: 10,

@@ -13,7 +13,6 @@ interface CounterControlProps {
   onDecrement: () => void;
   onIncrement: () => void;
   variant: 'exercise' | 'food';
-  subtitle?: string;
   compact?: boolean;
 }
 
@@ -22,7 +21,6 @@ export function CounterControl({
   onDecrement,
   onIncrement,
   variant,
-  subtitle,
   compact = false,
 }: CounterControlProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
@@ -31,14 +29,6 @@ export function CounterControl({
 
   return (
     <View style={[styles.wrapper, compact && styles.wrapperCompact]}>
-      {subtitle ? (
-        <Text
-          style={[styles.subtitle, compact && styles.subtitleCompact, { color: palette.text }]}
-          numberOfLines={1}
-        >
-          {subtitle}
-        </Text>
-      ) : null}
       <View style={styles.row}>
         <Pressable
           onPress={onDecrement}
@@ -92,17 +82,6 @@ const styles = StyleSheet.create({
   },
   wrapperCompact: {
     paddingVertical: 2,
-  },
-  subtitle: {
-    fontSize: 11,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-    opacity: 0.85,
-  },
-  subtitleCompact: {
-    fontSize: 9,
-    marginBottom: 2,
   },
   row: {
     flexDirection: 'row',
