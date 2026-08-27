@@ -27,4 +27,4 @@ export const colors = {
 
 export const EXERCISE_LABELS = ['ноги', 'грудь', 'спина'] as const;
 export const MAX_MEALS = 5;
-export const MAX_SETS = 6;
+export const MAX_SETS = 5;
