@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -24,10 +24,9 @@ import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
 
-type DialogState =
-  | { kind: 'submit'; variant: TableVariant }
-  | { kind: 'clear'; variant: TableVariant }
-  | null;
+type DialogState = {
+  variant: TableVariant;
+} | null;
 
 export default function App() {
   return (
@@ -43,17 +42,17 @@ function AppContent() {
   const tracker = useTrackerData();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  /** После «Нет» на «Вы сделали?» — ждём «Нет» на «Вы съели?» для экрана истории */
+  const awaitingFoodNoRef = useRef(false);
 
-  const { registerTap } = useTableGestures({
-    onClear: (variant) => setDialog({ kind: 'clear', variant }),
-    onOpenChangelog: () => setShowChangelog(true),
-  });
+  const openSubmitDialog = useCallback((variant: TableVariant) => {
+    setDialog({ variant });
+  }, []);
+
+  const { registerTap } = useTableGestures({ onSubmit: openSubmitDialog });
 
   const dialogMessage = useMemo(() => {
     if (!dialog) return '';
-    if (dialog.kind === 'clear') {
-      return 'Очистить данные в этой таблице за сегодня?';
-    }
     if (dialog.variant === 'exercise') {
       return `Вы сделали ${tracker.exerciseCounter} повторений?`;
     }
@@ -62,15 +61,28 @@ function AppContent() {
 
   const handleDialogConfirm = useCallback(() => {
     if (!dialog) return;
-    if (dialog.kind === 'clear') {
-      if (dialog.variant === 'exercise') tracker.clearTodayExercise();
-      else tracker.clearTodayFood();
-    } else {
-      if (dialog.variant === 'exercise') tracker.submitExercise();
-      else tracker.submitFood();
-    }
+    awaitingFoodNoRef.current = false;
+    if (dialog.variant === 'exercise') tracker.submitExercise();
+    else tracker.submitFood();
     setDialog(null);
   }, [dialog, tracker]);
+
+  const handleDialogCancel = useCallback(() => {
+    if (!dialog) return;
+
+    if (dialog.variant === 'exercise') {
+      awaitingFoodNoRef.current = true;
+    } else if (dialog.variant === 'food' && awaitingFoodNoRef.current) {
+      awaitingFoodNoRef.current = false;
+      setDialog(null);
+      setShowChangelog(true);
+      return;
+    } else {
+      awaitingFoodNoRef.current = false;
+    }
+
+    setDialog(null);
+  }, [dialog]);
 
   if (!tracker.ready) {
     return (
@@ -112,7 +124,7 @@ function AppContent() {
               value={tracker.exerciseCounter}
               onDecrement={() => tracker.adjustExercise(-1)}
               onIncrement={() => tracker.adjustExercise(1)}
-              onValuePress={() => setDialog({ kind: 'submit', variant: 'exercise' })}
+              onValuePress={() => openSubmitDialog('exercise')}
               compact
             />
           </View>
@@ -131,7 +143,7 @@ function AppContent() {
               value={tracker.foodCounter}
               onDecrement={() => tracker.adjustFood(-10)}
               onIncrement={() => tracker.adjustFood(10)}
-              onValuePress={() => setDialog({ kind: 'submit', variant: 'food' })}
+              onValuePress={() => openSubmitDialog('food')}
               compact
             />
             <WeekTable
@@ -151,7 +163,7 @@ function AppContent() {
           message={dialogMessage}
           variant={dialog?.variant ?? 'exercise'}
           onConfirm={handleDialogConfirm}
-          onCancel={() => setDialog(null)}
+          onCancel={handleDialogCancel}
         />
       </SafeAreaView>
     </MobileScreen>
