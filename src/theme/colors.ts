@@ -1,0 +1,30 @@
+export const colors = {
+  bg: '#0a0a12',
+  bgCard: '#12121c',
+  bgCell: '#1a1a28',
+  bgCellActive: '#221a32',
+
+  exercise: {
+    primary: '#e040fb',
+    glow: '#ff00ff',
+    dim: '#9c27b0',
+    text: '#f48fb1',
+  },
+
+  food: {
+    primary: '#00d4ff',
+    glow: '#00b0ff',
+    dim: '#0288d1',
+    text: '#80deea',
+  },
+
+  text: '#e8e8f0',
+  textMuted: '#8888a0',
+  border: '#2a2a3a',
+  borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
+  borderGlowFood: 'rgba(0, 212, 255, 0.4)',
+};
+
+export const EXERCISE_LABELS = ['ноги', 'грудь', 'спина'] as const;
+export const MAX_MEALS = 5;
+export const MAX_SETS = 6;
