@@ -8,21 +8,25 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { getDayOfMonth } from '../utils/dates';
+import { ExerciseCell, ExerciseColumns } from '../types';
+import { exercisesToTableRows } from '../storage/storage';
 
 type Variant = 'exercise' | 'food';
+
+type TableCell = string | number | ExerciseCell;
 
 interface WeekTableProps {
   variant: Variant;
   weekDays: Date[];
   todayKey: string;
-  columns: { items: (string | number)[][]; sums: number[] };
+  columns: { items: TableCell[][]; sums: number[] };
   maxRows: number;
   onTap?: () => void;
   flex?: boolean;
 }
 
-function formatExerciseCell(values: [number, number, number]): string {
-  return `${values[0]} ${values[1]} ${values[2]}`;
+function isExerciseCell(cell: TableCell | undefined): cell is ExerciseCell {
+  return Array.isArray(cell);
 }
 
 function dateKey(day: Date): string {
@@ -142,18 +146,44 @@ export function WeekTable({
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.cellText,
-                        variant === 'food' && styles.foodCellText,
-                        { color: cell != null ? palette.primary : colors.textMuted },
-                      ]}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.7}
-                    >
-                      {cell != null ? String(cell) : ''}
-                    </Text>
+                    {variant === 'exercise' && isExerciseCell(cell) ? (
+                      <View style={styles.exerciseMiniRow}>
+                        {cell.map((value, miniIdx) => (
+                          <Text
+                            key={miniIdx}
+                            style={[
+                              styles.exerciseMiniCell,
+                              {
+                                color: value != null ? palette.primary : colors.textMuted,
+                              },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.6}
+                          >
+                            {value != null ? String(value) : ''}
+                          </Text>
+                        ))}
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.cellText,
+                          variant === 'food' && styles.foodCellText,
+                          {
+                            color:
+                              cell != null && cell !== ''
+                                ? palette.primary
+                                : colors.textMuted,
+                          },
+                        ]}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
+                        {cell != null ? String(cell) : ''}
+                      </Text>
+                    )}
                   </View>
                 );
               })}
@@ -197,10 +227,10 @@ export function WeekTable({
 }
 
 export function buildExerciseColumns(
-  weekData: { sets: [number, number, number][]; sum: number }[],
-): { items: string[][]; sums: number[] } {
+  weekData: { exercises: ExerciseColumns; sum: number }[],
+): { items: ExerciseCell[][]; sums: number[] } {
   return {
-    items: weekData.map((d) => d.sets.map(formatExerciseCell)),
+    items: weekData.map((d) => exercisesToTableRows(d.exercises)),
     sums: weekData.map((d) => d.sum),
   };
 }
@@ -307,6 +337,18 @@ const styles = StyleSheet.create({
   },
   cellText: {
     fontSize: 9,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  exerciseMiniRow: {
+    flexDirection: 'row',
+    width: '100%',
+    alignItems: 'center',
+  },
+  exerciseMiniCell: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 8,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },

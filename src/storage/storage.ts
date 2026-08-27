@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppState, DayRecord, DEFAULT_STATE } from '../types';
+import {
+  AppState,
+  DayRecord,
+  DEFAULT_STATE,
+  EMPTY_EXERCISES,
+  ExerciseCell,
+  ExerciseColumns,
+} from '../types';
+import { MAX_SETS } from '../theme/colors';
 import { STORAGE_KEY } from '../utils/dates';
 
 export async function loadState(): Promise<AppState> {
@@ -25,17 +33,51 @@ export function getDayRecord(state: AppState, dateKey: string): DayRecord {
   return (
     state.days[dateKey] ?? {
       date: dateKey,
-      exerciseSets: [],
       meals: [],
     }
   );
 }
 
-export function sumExerciseDay(sets: DayRecord['exerciseSets']): number {
-  return sets.reduce(
-    (total, set) => total + set[0] + set[1] + set[2],
-    0,
-  );
+/** Упражнения дня (миграция со старого exerciseSets) */
+export function getDayExercises(day: DayRecord): ExerciseColumns {
+  if (day.exercises) {
+    return [
+      [...day.exercises[0]],
+      [...day.exercises[1]],
+      [...day.exercises[2]],
+    ];
+  }
+
+  const result: ExerciseColumns = [[], [], []];
+  for (const set of day.exerciseSets ?? []) {
+    for (let i = 0; i < 3; i++) {
+      result[i].push(set[i]);
+    }
+  }
+  return result;
+}
+
+/** Какое упражнение заполняется следующим */
+export function inferCurrentExerciseIndex(exercises: ExerciseColumns): 0 | 1 | 2 {
+  for (let i = 0; i < 3; i++) {
+    if (exercises[i].length < MAX_SETS) return i as 0 | 1 | 2;
+  }
+  return 2;
+}
+
+/** Строки таблицы: подход × [ноги, грудь, спина] */
+export function exercisesToTableRows(exercises: ExerciseColumns): ExerciseCell[] {
+  return Array.from({ length: MAX_SETS }, (_, rowIdx) => [
+    exercises[0][rowIdx] ?? null,
+    exercises[1][rowIdx] ?? null,
+    exercises[2][rowIdx] ?? null,
+  ]);
+}
+
+export function sumExerciseDay(exercises: ExerciseColumns): number {
+  return exercises[0].reduce((a, b) => a + b, 0)
+    + exercises[1].reduce((a, b) => a + b, 0)
+    + exercises[2].reduce((a, b) => a + b, 0);
 }
 
 export function sumMealsDay(meals: number[]): number {
@@ -47,16 +89,12 @@ export function getLastExerciseRepFromHistory(state: AppState): number {
   let last: number | null = null;
 
   for (const key of Object.keys(state.days).sort()) {
-    const day = state.days[key];
-    for (const set of day.exerciseSets) {
-      for (const rep of set) {
+    const exercises = getDayExercises(state.days[key]);
+    for (const column of exercises) {
+      for (const rep of column) {
         last = rep;
       }
     }
-  }
-
-  for (let i = 0; i < state.currentExerciseIndex; i++) {
-    last = state.currentSetDraft[i];
   }
 
   return last ?? state.lastExerciseRep ?? DEFAULT_STATE.lastExerciseRep;
@@ -81,7 +119,7 @@ export function sumExerciseWeek(
   dateKeys: string[],
 ): number {
   return dateKeys.reduce(
-    (total, key) => total + sumExerciseDay(getDayRecord({ days } as AppState, key).exerciseSets),
+    (total, key) => total + sumExerciseDay(getDayExercises(getDayRecord({ days } as AppState, key))),
     0,
   );
 }

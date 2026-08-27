@@ -1,16 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  getDayExercises,
   getDayRecord,
   getLastExerciseRepFromHistory,
   getLastMealGramsFromHistory,
+  inferCurrentExerciseIndex,
   loadState,
   saveState,
   sumExerciseDay,
   sumMealsDay,
 } from '../storage/storage';
-import { AppState, DEFAULT_STATE, ExerciseSet } from '../types';
+import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../types';
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays } from '../utils/dates';
+
+function syncExerciseIndex(state: AppState, todayKey: string): AppState {
+  const exercises = getDayExercises(getDayRecord(state, todayKey));
+  return {
+    ...state,
+    currentExerciseIndex: inferCurrentExerciseIndex(exercises),
+  };
+}
 
 export function useTrackerData() {
   const [state, setState] = useState<AppState | null>(null);
@@ -26,11 +36,12 @@ export function useTrackerData() {
 
   useEffect(() => {
     loadState().then((loaded) => {
-      setState(loaded);
-      setExerciseCounter(getLastExerciseRepFromHistory(loaded));
-      setFoodCounter(getLastMealGramsFromHistory(loaded));
+      const synced = syncExerciseIndex(loaded, todayKey);
+      setState(synced);
+      setExerciseCounter(getLastExerciseRepFromHistory(synced));
+      setFoodCounter(getLastMealGramsFromHistory(synced));
     });
-  }, []);
+  }, [todayKey]);
 
   const persist = useCallback(async (next: AppState) => {
     setState(next);
@@ -45,38 +56,33 @@ export function useTrackerData() {
     setFoodCounter((v) => Math.max(0, v + delta));
   }, []);
 
-  /** OK — записать повторение в таблицу упражнений */
+  /** OK — записать повторение в колонку текущего упражнения */
   const submitExercise = useCallback(async () => {
     if (!state) return;
 
     const today = getDayRecord(state, todayKey);
-    if (today.exerciseSets.length >= MAX_SETS) return;
+    const exercises = getDayExercises(today);
+    const idx = state.currentExerciseIndex;
 
-    const draft: ExerciseSet = [...state.currentSetDraft] as ExerciseSet;
-    draft[state.currentExerciseIndex] = exerciseCounter;
+    if (exercises[idx].length >= MAX_SETS) return;
+    if (exercises.every((col) => col.length >= MAX_SETS)) return;
 
-    let nextIndex = state.currentExerciseIndex;
-    let nextDraft = draft;
-    let nextSets = today.exerciseSets;
-
-    if (state.currentExerciseIndex === 2) {
-      nextSets = [...today.exerciseSets, draft];
-      nextDraft = [0, 0, 0];
-      nextIndex = 0;
-    } else {
-      nextIndex = (state.currentExerciseIndex + 1) as 0 | 1 | 2;
-    }
+    const nextExercises: ExerciseColumns = [
+      [...exercises[0]],
+      [...exercises[1]],
+      [...exercises[2]],
+    ];
+    nextExercises[idx] = [...nextExercises[idx], exerciseCounter];
 
     const next: AppState = {
       ...state,
       lastExerciseRep: exerciseCounter,
-      currentExerciseIndex: nextIndex,
-      currentSetDraft: nextDraft,
+      currentExerciseIndex: inferCurrentExerciseIndex(nextExercises),
       days: {
         ...state.days,
         [todayKey]: {
           ...today,
-          exerciseSets: nextSets,
+          exercises: nextExercises,
         },
       },
     };
@@ -113,10 +119,12 @@ export function useTrackerData() {
     const next: AppState = {
       ...state,
       currentExerciseIndex: 0,
-      currentSetDraft: [0, 0, 0],
       days: {
         ...state.days,
-        [todayKey]: { ...today, exerciseSets: [] },
+        [todayKey]: {
+          ...today,
+          exercises: EMPTY_EXERCISES.map((col) => [...col]) as ExerciseColumns,
+        },
       },
     };
 
@@ -146,14 +154,14 @@ export function useTrackerData() {
     ? getDayRecord(state, todayKey).meals.length
     : 0;
 
-  const todaySetsCount = state
-    ? getDayRecord(state, todayKey).exerciseSets.length
+  const todayExerciseSetsCount = state
+    ? getDayExercises(getDayRecord(state, todayKey))[state.currentExerciseIndex].length
     : 0;
 
   const weekExerciseData = weekKeys.map((key) => {
-    if (!state) return { sets: [] as ExerciseSet[], sum: 0 };
-    const record = getDayRecord(state, key);
-    return { sets: record.exerciseSets, sum: sumExerciseDay(record.exerciseSets) };
+    if (!state) return { exercises: EMPTY_EXERCISES, sum: 0 };
+    const exercises = getDayExercises(getDayRecord(state, key));
+    return { exercises, sum: sumExerciseDay(exercises) };
   });
 
   const weekFoodData = weekKeys.map((key) => {
@@ -176,10 +184,9 @@ export function useTrackerData() {
     clearTodayFood,
     currentExerciseLabel,
     todayMealsCount,
-    todaySetsCount,
+    todayExerciseSetsCount,
     weekExerciseData,
     weekFoodData,
-    currentSetDraft: state?.currentSetDraft ?? ([0, 0, 0] as ExerciseSet),
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
   };
 }
