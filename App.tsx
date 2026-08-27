@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -14,10 +15,12 @@ import {
   buildExerciseColumns,
   buildFoodColumns,
 } from './src/components/WeekTable';
-import { useTableClearGesture } from './src/hooks/useTableClearGesture';
+import { useTableGestures } from './src/hooks/useTableGestures';
 import { useTrackerData } from './src/hooks/useTrackerData';
+import { ChangelogScreen } from './src/screens/ChangelogScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, GAP } from './src/theme/layout';
+import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
 
@@ -39,9 +42,11 @@ export default function App() {
 function AppContent() {
   const tracker = useTrackerData();
   const [dialog, setDialog] = useState<DialogState>(null);
+  const [showChangelog, setShowChangelog] = useState(false);
 
-  const { registerTap } = useTableClearGesture((variant) => {
-    setDialog({ kind: 'clear', variant });
+  const { registerTap } = useTableGestures({
+    onClear: (variant) => setDialog({ kind: 'clear', variant }),
+    onOpenChangelog: () => setShowChangelog(true),
   });
 
   const dialogMessage = useMemo(() => {
@@ -75,6 +80,15 @@ function AppContent() {
     );
   }
 
+  if (showChangelog) {
+    return (
+      <MobileScreen>
+        <StatusBar style="light" />
+        <ChangelogScreen onClose={() => setShowChangelog(false)} />
+      </MobileScreen>
+    );
+  }
+
   const exerciseColumns = buildExerciseColumns(tracker.weekExerciseData);
   const foodColumns = buildFoodColumns(tracker.weekFoodData);
 
@@ -103,7 +117,13 @@ function AppContent() {
             />
           </View>
 
-          <View style={styles.divider} />
+          <View style={styles.versionRow}>
+            <View style={styles.versionLine} />
+            <Text style={styles.versionText} numberOfLines={1}>
+              v{APP_VERSION} · {formatLastCommit(LAST_COMMIT_AT)}
+            </Text>
+            <View style={styles.versionLine} />
+          </View>
 
           <View style={styles.half}>
             <CounterControl
@@ -160,10 +180,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: GAP,
   },
-  divider: {
+  versionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: GAP,
+    gap: 8,
+  },
+  versionLine: {
+    flex: 1,
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: GAP,
     opacity: 0.4,
+  },
+  versionText: {
+    color: colors.textMuted,
+    fontSize: 9,
+    opacity: 0.5,
+    flexShrink: 0,
   },
 });

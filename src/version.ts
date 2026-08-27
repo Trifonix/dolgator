@@ -1,0 +1,21 @@
+/**
+ * Версия приложения. При каждом коммите:
+ * 1. Повысить APP_VERSION (semver: 0.1.0 → 0.1.1 → 0.2.0 …)
+ * 2. Обновить LAST_COMMIT_AT (дата/время коммита, ISO 8601)
+ * 3. Добавить запись в CHANGELOG.md и src/changelog.ts
+ */
+export const APP_VERSION = '0.1.0';
+
+/** Дата и время последнего коммита (ISO 8601) */
+export const LAST_COMMIT_AT = '2026-08-27T23:06:00+03:00';
+
+export function formatLastCommit(dateIso: string): string {
+  const d = new Date(dateIso);
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
