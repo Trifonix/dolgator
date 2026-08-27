@@ -9,6 +9,9 @@ export const GAP = Math.round(BASE_FONT * 1.2);
 export const REF_WIDTH = 360;
 export const REF_HEIGHT = 640;
 
+/** Мин. отступ снизу под 3-кнопочную навигацию Android (dp) */
+export const ANDROID_NAV_BAR_MIN = 40;
+
 export const fullScreen: ViewStyle = Platform.select({
   web: {
     height: '100vh',

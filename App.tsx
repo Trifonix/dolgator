@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmDialog } from './src/components/ConfirmDialog';
 import { CounterControl } from './src/components/CounterControl';
 import { MobileScreen } from './src/components/MobileScreen';
@@ -19,7 +20,7 @@ import { useTableGestures } from './src/hooks/useTableGestures';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { ChangelogScreen } from './src/screens/ChangelogScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
-import { fullScreen, GAP } from './src/theme/layout';
+import { fullScreen, ANDROID_NAV_BAR_MIN, GAP } from './src/theme/layout';
 import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
@@ -41,6 +42,11 @@ export default function App() {
 
 function AppContent() {
   const tracker = useTrackerData();
+  const insets = useSafeAreaInsets();
+  const bottomInset =
+    Platform.OS === 'android'
+      ? Math.max(insets.bottom, ANDROID_NAV_BAR_MIN)
+      : insets.bottom;
   const [dialog, setDialog] = useState<DialogState>(null);
   const [showChangelog, setShowChangelog] = useState(false);
   /** Секрет истории: 5 тапов верх → Нет → 5 тапов низ → Нет (только clear-диалоги) */
@@ -128,7 +134,10 @@ function AppContent() {
 
   return (
     <MobileScreen>
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <SafeAreaView
+        style={[styles.safe, { paddingBottom: bottomInset }]}
+        edges={['top']}
+      >
         <StatusBar style="light" />
         <View
           style={styles.main}
