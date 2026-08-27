@@ -35,6 +35,12 @@
           }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "42a67e02-e059-4cc6-ba0a-c9c99cb487b6"
+      }
+    },
+    "owner": "trifonix"
   }
 }
