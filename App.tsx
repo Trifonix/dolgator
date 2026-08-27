@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -9,6 +8,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { CounterControl } from './src/components/CounterControl';
+import { MobileScreen } from './src/components/MobileScreen';
 import {
   WeekTable,
   buildExerciseColumns,
@@ -16,12 +16,15 @@ import {
 } from './src/components/WeekTable';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
+import { fullScreen } from './src/theme/layout';
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <AppContent />
-    </SafeAreaProvider>
+    <View style={fullScreen}>
+      <SafeAreaProvider>
+        <AppContent />
+      </SafeAreaProvider>
+    </View>
   );
 }
 
@@ -30,7 +33,7 @@ function AppContent() {
 
   if (!tracker.ready) {
     return (
-      <View style={styles.loading}>
+      <View style={[styles.loading, fullScreen]}>
         <ActivityIndicator size="large" color={colors.exercise.primary} />
       </View>
     );
@@ -44,77 +47,58 @@ function AppContent() {
     .join(' ');
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar style="light" />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── Упражнения ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.exercise.primary }]}>
-            Повторения
-          </Text>
+    <MobileScreen>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <View style={styles.main}>
+          {/* ── Упражнения ── */}
+          <View style={styles.half}>
+            <WeekTable
+              variant="exercise"
+              weekDays={tracker.weekDays}
+              todayKey={tracker.todayKey}
+              columns={exerciseColumns}
+              maxRows={MAX_SETS}
+              onPress={tracker.submitExercise}
+              hint="тап = ОК"
+              flex
+            />
+            <CounterControl
+              variant="exercise"
+              value={tracker.exerciseCounter}
+              onDecrement={() => tracker.adjustExercise(-1)}
+              onIncrement={() => tracker.adjustExercise(1)}
+              subtitle={`${tracker.currentExerciseLabel} · ${tracker.todaySetsCount + 1} · [${draftHint}]`}
+              compact
+            />
+          </View>
 
-          <WeekTable
-            variant="exercise"
-            weekDays={tracker.weekDays}
-            todayKey={tracker.todayKey}
-            columns={exerciseColumns}
-            maxRows={MAX_SETS}
-            onPress={tracker.submitExercise}
-            hint="нажми таблицу — записать подход (ОК)"
-          />
+          <View style={styles.divider} />
 
-          <CounterControl
-            variant="exercise"
-            value={tracker.exerciseCounter}
-            onDecrement={() => tracker.adjustExercise(-1)}
-            onIncrement={() => tracker.adjustExercise(1)}
-            subtitle={`${tracker.currentExerciseLabel} · подход ${tracker.todaySetsCount + 1} · [${draftHint}]`}
-          />
-
-          {tracker.todaySetsCount >= MAX_SETS && (
-            <Text style={styles.limitText}>
-              Лимит подходов на сегодня ({MAX_SETS})
-            </Text>
-          )}
+          {/* ── Еда ── */}
+          <View style={styles.half}>
+            <CounterControl
+              variant="food"
+              value={tracker.foodCounter}
+              onDecrement={() => tracker.adjustFood(-10)}
+              onIncrement={() => tracker.adjustFood(10)}
+              subtitle={`приём ${tracker.todayMealsCount + 1} · г`}
+              compact
+            />
+            <WeekTable
+              variant="food"
+              weekDays={tracker.weekDays}
+              todayKey={tracker.todayKey}
+              columns={foodColumns}
+              maxRows={MAX_MEALS}
+              onPress={tracker.submitFood}
+              hint="тап = ОК"
+              flex
+            />
+          </View>
         </View>
-
-        <View style={styles.divider} />
-
-        {/* ── Еда ── */}
-        <View style={styles.section}>
-          <CounterControl
-            variant="food"
-            value={tracker.foodCounter}
-            onDecrement={() => tracker.adjustFood(-10)}
-            onIncrement={() => tracker.adjustFood(10)}
-            subtitle={`приём ${tracker.todayMealsCount + 1} · граммы`}
-          />
-
-          <WeekTable
-            variant="food"
-            weekDays={tracker.weekDays}
-            todayKey={tracker.todayKey}
-            columns={foodColumns}
-            maxRows={MAX_MEALS}
-            onPress={tracker.submitFood}
-            hint="нажми таблицу — записать приём (ОК)"
-          />
-
-          {tracker.todayMealsCount >= MAX_MEALS && (
-            <Text style={styles.limitText}>
-              Лимит приёмов пищи на сегодня ({MAX_MEALS})
-            </Text>
-          )}
-        </View>
-
-        <Text style={styles.footer}>
-          неделя · данные сохраняются на телефоне
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </MobileScreen>
   );
 }
 
@@ -124,47 +108,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   loading: {
-    flex: 1,
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: {
-    paddingHorizontal: 12,
-    paddingBottom: 24,
-    gap: 4,
+  main: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    overflow: 'hidden',
   },
-  section: {
-    gap: 4,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 4,
-    textShadowColor: colors.exercise.glow,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+  half: {
+    flex: 1,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    gap: 2,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 12,
-    opacity: 0.5,
-  },
-  limitText: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: 11,
-    marginTop: 4,
-  },
-  footer: {
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: 10,
-    marginTop: 16,
-    opacity: 0.5,
+    marginVertical: 4,
+    opacity: 0.4,
   },
 });

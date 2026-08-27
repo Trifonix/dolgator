@@ -15,15 +15,19 @@ interface WeekTableProps {
   variant: Variant;
   weekDays: Date[];
   todayKey: string;
-  /** Строки данных: exercise = массив подходов, food = массив приёмов */
   columns: { items: (string | number)[][]; sums: number[] };
   maxRows: number;
   onPress: () => void;
   hint?: string;
+  flex?: boolean;
 }
 
 function formatExerciseCell(values: [number, number, number]): string {
   return `${values[0]} ${values[1]} ${values[2]}`;
+}
+
+function dateKey(day: Date): string {
+  return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 }
 
 export function WeekTable({
@@ -34,10 +38,10 @@ export function WeekTable({
   maxRows,
   onPress,
   hint,
+  flex = false,
 }: WeekTableProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
   const sumLabel = variant === 'exercise' ? 'суммы' : 'сумма';
-
   const rows = Array.from({ length: maxRows }, (_, rowIdx) => rowIdx);
 
   return (
@@ -45,106 +49,101 @@ export function WeekTable({
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
-        {
-          borderColor: palette.primary,
-          shadowColor: palette.glow,
-        },
+        flex && styles.containerFlex,
+        { borderColor: palette.primary, shadowColor: palette.glow },
         pressed && styles.containerPressed,
       ]}
     >
       {hint ? (
-        <Text style={[styles.hint, { color: palette.text }]}>
-          {hint}
-        </Text>
+        <Text style={[styles.hint, { color: palette.text }]}>{hint}</Text>
       ) : null}
 
-      {/* Заголовок — числа дней */}
-      <View style={styles.row}>
-        <View style={styles.cornerCell} />
-        {weekDays.map((day) => {
-          const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-          const isToday = key === todayKey;
-          return (
-            <View
-              key={key}
-              style={[
-                styles.headerCell,
-                isToday && { backgroundColor: colors.bgCellActive, borderColor: palette.primary },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.headerText,
-                  { color: isToday ? palette.primary : colors.textMuted },
-                ]}
-              >
-                {getDayOfMonth(day)}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
-      {/* Строки данных */}
-      {rows.map((rowIdx) => (
-        <View key={rowIdx} style={styles.row}>
-          <View style={styles.rowLabel}>
-            <Text style={styles.rowLabelText}>{rowIdx + 1}</Text>
-          </View>
-          {weekDays.map((day, colIdx) => {
-            const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+      <View style={[styles.body, flex && styles.bodyFlex]}>
+        {/* Заголовок */}
+        <View style={styles.row}>
+          <View style={styles.cornerCell} />
+          {weekDays.map((day) => {
+            const key = dateKey(day);
             const isToday = key === todayKey;
-            const col = columns.items[colIdx];
-            const cell = col?.[rowIdx];
-
             return (
               <View
                 key={key}
                 style={[
-                  styles.cell,
-                  isToday && styles.cellToday,
+                  styles.headerCell,
+                  isToday && { backgroundColor: colors.bgCellActive },
                 ]}
               >
                 <Text
                   style={[
-                    styles.cellText,
-                    { color: cell != null ? palette.primary : colors.textMuted },
-                    variant === 'food' && styles.foodCellText,
+                    styles.headerText,
+                    { color: isToday ? palette.primary : colors.textMuted },
                   ]}
-                  numberOfLines={1}
                 >
-                  {cell != null ? String(cell) : ''}
+                  {getDayOfMonth(day)}
                 </Text>
               </View>
             );
           })}
         </View>
-      ))}
 
-      {/* Строка сумм */}
-      <View style={[styles.row, styles.sumRow]}>
-        <View style={styles.rowLabel}>
-          <Text style={[styles.sumLabel, { color: palette.primary }]}>
-            {sumLabel}
-          </Text>
-        </View>
-        {columns.sums.map((sum, colIdx) => {
-          const day = weekDays[colIdx];
-          const key = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`;
-          return (
-            <View key={key} style={[styles.cell, styles.sumCell]}>
-              <Text style={[styles.sumText, { color: palette.primary }]}>
-                {sum > 0 ? sum : ''}
-              </Text>
+        {/* Строки данных — растягиваются равномерно */}
+        <View style={[styles.dataRows, flex && styles.dataRowsFlex]}>
+          {rows.map((rowIdx) => (
+            <View key={rowIdx} style={[styles.row, flex && styles.rowFlex]}>
+              <View style={styles.cornerCell}>
+                <Text style={styles.rowLabelText}>{rowIdx + 1}</Text>
+              </View>
+              {weekDays.map((day, colIdx) => {
+                const key = dateKey(day);
+                const isToday = key === todayKey;
+                const cell = columns.items[colIdx]?.[rowIdx];
+
+                return (
+                  <View
+                    key={key}
+                    style={[styles.cell, flex && styles.cellFlex, isToday && styles.cellToday]}
+                  >
+                    <Text
+                      style={[
+                        styles.cellText,
+                        variant === 'food' && styles.foodCellText,
+                        { color: cell != null ? palette.primary : colors.textMuted },
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
+                      {cell != null ? String(cell) : ''}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
-          );
-        })}
+          ))}
+        </View>
+
+        {/* Суммы */}
+        <View style={[styles.row, styles.sumRow]}>
+          <View style={styles.cornerCell}>
+            <Text style={[styles.sumLabel, { color: palette.primary }]}>{sumLabel}</Text>
+          </View>
+          {columns.sums.map((sum, colIdx) => {
+            const day = weekDays[colIdx];
+            const key = dateKey(day);
+            return (
+              <View key={key} style={styles.cell}>
+                <Text style={[styles.sumText, { color: palette.primary }]}>
+                  {sum > 0 ? sum : ''}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
       </View>
     </Pressable>
   );
 }
 
-/** Подготовка данных для таблицы упражнений */
 export function buildExerciseColumns(
   weekData: { sets: [number, number, number][]; sum: number }[],
 ): { items: string[][]; sums: number[] } {
@@ -154,7 +153,6 @@ export function buildExerciseColumns(
   };
 }
 
-/** Подготовка данных для таблицы еды */
 export function buildFoodColumns(
   weekData: { meals: number[]; sum: number }[],
 ): { items: (string | number)[][]; sums: number[] } {
@@ -166,93 +164,97 @@ export function buildFoodColumns(
 
 const glowShadow: ViewStyle = {
   shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.35,
-  shadowRadius: 16,
-  elevation: 6,
+  shadowOpacity: 0.3,
+  shadowRadius: 10,
+  elevation: 4,
 };
 
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1.5,
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: colors.bgCard,
-    padding: 6,
+    padding: 4,
     ...glowShadow,
+  },
+  containerFlex: {
+    flex: 1,
   },
   containerPressed: {
     opacity: 0.85,
-    transform: [{ scale: 0.985 }],
   },
   hint: {
-    fontSize: 10,
+    fontSize: 8,
     textAlign: 'center',
-    marginBottom: 4,
-    opacity: 0.7,
-    letterSpacing: 0.5,
+    marginBottom: 2,
+    opacity: 0.65,
+    letterSpacing: 0.3,
+  },
+  body: {},
+  bodyFlex: {
+    flex: 1,
+  },
+  dataRows: {},
+  dataRowsFlex: {
+    flex: 1,
   },
   row: {
     flexDirection: 'row',
   },
+  rowFlex: {
+    flex: 1,
+  },
   cornerCell: {
-    width: 28,
+    width: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 4,
-    borderRadius: 4,
+    justifyContent: 'center',
     marginHorizontal: 1,
   },
   headerText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
-  rowLabel: {
-    width: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   rowLabelText: {
-    fontSize: 10,
+    fontSize: 8,
     color: colors.textMuted,
   },
   cell: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 5,
     marginHorizontal: 1,
-    borderRadius: 4,
-    minHeight: 28,
+  },
+  cellFlex: {
+    minHeight: 0,
   },
   cellToday: {
     backgroundColor: colors.bgCell,
+    borderRadius: 3,
   },
   cellText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   foodCellText: {
-    fontSize: 12,
+    fontSize: 10,
   },
   sumRow: {
-    marginTop: 2,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    paddingTop: 4,
   },
   sumLabel: {
-    fontSize: 9,
+    fontSize: 7,
     fontWeight: '700',
-    textTransform: 'lowercase',
-  },
-  sumCell: {
-    minHeight: 24,
   },
   sumText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
