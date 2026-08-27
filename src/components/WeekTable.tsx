@@ -82,7 +82,7 @@ export function WeekTable({
           })}
         </View>
 
-        {/* Строки данных — растягиваются равномерно */}
+        {/* Строки данных и суммы — одинаковая высота */}
         <View style={[styles.dataRows, flex && styles.dataRowsFlex]}>
           {rows.map((rowIdx) => (
             <View key={rowIdx} style={[styles.row, flex && styles.rowFlex]}>
@@ -116,22 +116,32 @@ export function WeekTable({
               })}
             </View>
           ))}
-        </View>
 
-        {/* Суммы */}
-        <View style={[styles.row, styles.sumRow]}>
-          <View style={styles.cornerCell} />
-          {columns.sums.map((sum, colIdx) => {
-            const day = weekDays[colIdx];
-            const key = dateKey(day);
-            return (
-              <View key={key} style={styles.cell}>
-                <Text style={[styles.sumText, { color: palette.primary }]}>
-                  {sum > 0 ? sum : ''}
-                </Text>
-              </View>
-            );
-          })}
+          <View style={[styles.row, flex && styles.rowFlex, styles.sumRow]}>
+            <View style={styles.cornerCell} />
+            {columns.sums.map((sum, colIdx) => {
+              const day = weekDays[colIdx];
+              const key = dateKey(day);
+              const isToday = key === todayKey;
+
+              return (
+                <View
+                  key={key}
+                  style={[styles.cell, flex && styles.cellFlex, isToday && styles.cellToday]}
+                >
+                  <Text
+                    style={[
+                      styles.sumText,
+                      { color: sum > 0 ? palette.primary : colors.textMuted },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {sum > 0 ? sum : ' '}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
         </View>
       </View>
     </Pressable>
@@ -262,7 +272,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   sumText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
