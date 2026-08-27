@@ -4,10 +4,10 @@
  * 2. Обновить LAST_COMMIT_AT (дата/время коммита, ISO 8601)
  * 3. Добавить запись в CHANGELOG.md и src/changelog.ts
  */
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '0.1.1';
 
 /** Дата и время последнего коммита (ISO 8601) */
-export const LAST_COMMIT_AT = '2026-08-27T23:06:00+03:00';
+export const LAST_COMMIT_AT = '2026-08-27T23:41:00+03:00';
 
 export function formatLastCommit(dateIso: string): string {
   const d = new Date(dateIso);
