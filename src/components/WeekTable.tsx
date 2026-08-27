@@ -29,6 +29,41 @@ function dateKey(day: Date): string {
   return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 }
 
+/** Фон ячейки «сегодня»: каждая строка чуть светлее предыдущей */
+function todayCellBackground(rowIndex: number): string {
+  const alpha = 0.06 + rowIndex * 0.04;
+  return `rgba(255, 255, 255, ${Math.min(alpha, 0.26)})`;
+}
+
+function todayHeaderBackground(): string {
+  return 'rgba(255, 255, 255, 0.05)';
+}
+
+function todayCellLayout(rowIndex: number, maxRows: number): ViewStyle {
+  const base: ViewStyle = {
+    marginHorizontal: 0,
+    borderRadius: 0,
+  };
+  if (rowIndex === maxRows - 1) {
+    return {
+      ...base,
+      borderBottomLeftRadius: 3,
+      borderBottomRightRadius: 3,
+    };
+  }
+  return base;
+}
+
+function todayHeaderLayout(): ViewStyle {
+  return {
+    marginHorizontal: 0,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  };
+}
+
 export function WeekTable({
   variant,
   weekDays,
@@ -65,7 +100,8 @@ export function WeekTable({
                 key={key}
                 style={[
                   styles.headerCell,
-                  isToday && { backgroundColor: headerPalette.headerTodayBg },
+                  isToday && todayHeaderLayout(),
+                  isToday && { backgroundColor: todayHeaderBackground() },
                 ]}
               >
                 <Text
@@ -97,7 +133,14 @@ export function WeekTable({
                 return (
                   <View
                     key={key}
-                    style={[styles.cell, flex && styles.cellFlex, isToday && styles.cellToday]}
+                    style={[
+                      styles.cell,
+                      flex && styles.cellFlex,
+                      isToday && todayCellLayout(rowIdx, maxRows),
+                      isToday && {
+                        backgroundColor: todayCellBackground(rowIdx),
+                      },
+                    ]}
                   >
                     <Text
                       style={[
@@ -122,12 +165,17 @@ export function WeekTable({
             {columns.sums.map((sum, colIdx) => {
               const day = weekDays[colIdx];
               const key = dateKey(day);
-              const isToday = key === todayKey;
+              const isFirstCol = colIdx === 0;
 
               return (
                 <View
                   key={key}
-                  style={[styles.cell, flex && styles.cellFlex, isToday && styles.cellToday]}
+                  style={[
+                    styles.cell,
+                    styles.sumCellRight,
+                    isFirstCol && styles.sumCellLeft,
+                    flex && styles.cellFlex,
+                  ]}
                 >
                   <Text
                     style={[
@@ -171,13 +219,11 @@ const headerStyles = {
     headerBg: 'rgba(156, 39, 176, 0.22)',
     headerBorder: 'rgba(224, 64, 251, 0.35)',
     headerText: '#c9a0dc',
-    headerTodayBg: 'rgba(224, 64, 251, 0.28)',
   },
   food: {
     headerBg: 'rgba(2, 136, 209, 0.22)',
     headerBorder: 'rgba(0, 212, 255, 0.35)',
     headerText: '#7ecde8',
-    headerTodayBg: 'rgba(0, 212, 255, 0.28)',
   },
 };
 
@@ -202,7 +248,10 @@ const styles = StyleSheet.create({
   containerPressed: {
     opacity: 0.85,
   },
-  body: {},
+  body: {
+    overflow: 'hidden',
+    borderRadius: 6,
+  },
   bodyFlex: {
     flex: 1,
   },
@@ -224,7 +273,6 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    marginBottom: 2,
     borderRadius: 4,
   },
   headerCell: {
@@ -233,6 +281,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginHorizontal: 1,
     borderRadius: 3,
+    alignSelf: 'stretch',
   },
   headerText: {
     fontSize: 10,
@@ -251,13 +300,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 1,
+    alignSelf: 'stretch',
   },
   cellFlex: {
     minHeight: 0,
-  },
-  cellToday: {
-    backgroundColor: colors.bgCell,
-    borderRadius: 3,
   },
   cellText: {
     fontSize: 9,
@@ -268,8 +314,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   sumRow: {
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+  },
+  sumCellRight: {
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.border,
+  },
+  sumCellLeft: {
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderLeftColor: colors.border,
   },
   sumText: {
     fontSize: 9,
