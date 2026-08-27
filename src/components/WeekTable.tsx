@@ -39,6 +39,7 @@ export function WeekTable({
   flex = false,
 }: WeekTableProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
+  const headerPalette = variant === 'exercise' ? headerStyles.exercise : headerStyles.food;
   const rows = Array.from({ length: maxRows }, (_, rowIdx) => rowIdx);
 
   return (
@@ -53,8 +54,8 @@ export function WeekTable({
       ]}
     >
       <View style={[styles.body, flex && styles.bodyFlex]}>
-        {/* Заголовок */}
-        <View style={styles.row}>
+        {/* Заголовок — дни недели */}
+        <View style={[styles.headerRow, { backgroundColor: headerPalette.headerBg, borderBottomColor: headerPalette.headerBorder }]}>
           <View style={styles.cornerCell} />
           {weekDays.map((day) => {
             const key = dateKey(day);
@@ -64,13 +65,14 @@ export function WeekTable({
                 key={key}
                 style={[
                   styles.headerCell,
-                  isToday && { backgroundColor: colors.bgCellActive },
+                  isToday && { backgroundColor: headerPalette.headerTodayBg },
                 ]}
               >
                 <Text
                   style={[
                     styles.headerText,
-                    { color: isToday ? palette.primary : colors.textMuted },
+                    { color: isToday ? palette.primary : headerPalette.headerText },
+                    isToday && styles.headerTextToday,
                   ]}
                 >
                   {getDayOfMonth(day)}
@@ -154,6 +156,21 @@ export function buildFoodColumns(
   };
 }
 
+const headerStyles = {
+  exercise: {
+    headerBg: 'rgba(156, 39, 176, 0.22)',
+    headerBorder: 'rgba(224, 64, 251, 0.35)',
+    headerText: '#c9a0dc',
+    headerTodayBg: 'rgba(224, 64, 251, 0.28)',
+  },
+  food: {
+    headerBg: 'rgba(2, 136, 209, 0.22)',
+    headerBorder: 'rgba(0, 212, 255, 0.35)',
+    headerText: '#7ecde8',
+    headerTodayBg: 'rgba(0, 212, 255, 0.28)',
+  },
+};
+
 const glowShadow: ViewStyle = {
   shadowOffset: { width: 0, height: 0 },
   shadowOpacity: 0.3,
@@ -194,16 +211,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    marginBottom: 2,
+    borderRadius: 4,
+  },
   headerCell: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 1,
+    borderRadius: 3,
   },
   headerText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     fontVariant: ['tabular-nums'],
+  },
+  headerTextToday: {
+    fontWeight: '900',
   },
   rowLabelText: {
     fontSize: 8,
