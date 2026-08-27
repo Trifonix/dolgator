@@ -14,6 +14,7 @@ export const fullScreen: ViewStyle = Platform.select({
     height: '100vh',
     width: '100vw',
     overflow: 'hidden',
+    userSelect: 'none',
   },
   default: {
     flex: 1,
