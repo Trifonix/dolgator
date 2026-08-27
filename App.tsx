@@ -43,14 +43,17 @@ function AppContent() {
   const tracker = useTrackerData();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [showChangelog, setShowChangelog] = useState(false);
-  /** Секрет истории через «Вы сделали?» → Нет → «Вы съели?» → Нет */
-  const awaitingSubmitFoodNoRef = useRef(false);
-  /** Секрет истории: 5 тапов верх → Нет → 5 тапов низ → Нет */
+  /** Секрет истории: 5 тапов верх → Нет → 5 тапов низ → Нет (только clear-диалоги) */
   const awaitingClearFoodNoRef = useRef(false);
 
-  const openSubmitDialog = useCallback((variant: TableVariant) => {
-    setDialog({ kind: 'submit', variant });
+  const resetChangelogSequence = useCallback(() => {
+    awaitingClearFoodNoRef.current = false;
   }, []);
+
+  const openSubmitDialog = useCallback((variant: TableVariant) => {
+    resetChangelogSequence();
+    setDialog({ kind: 'submit', variant });
+  }, [resetChangelogSequence]);
 
   const openClearDialog = useCallback((variant: TableVariant) => {
     setDialog({ kind: 'clear', variant });
@@ -71,17 +74,16 @@ function AppContent() {
 
   const handleDialogConfirm = useCallback(() => {
     if (!dialog) return;
+    resetChangelogSequence();
     if (dialog.kind === 'clear') {
-      awaitingClearFoodNoRef.current = false;
       if (dialog.variant === 'exercise') tracker.clearTodayExercise();
       else tracker.clearTodayFood();
     } else {
-      awaitingSubmitFoodNoRef.current = false;
       if (dialog.variant === 'exercise') tracker.submitExercise();
       else tracker.submitFood();
     }
     setDialog(null);
-  }, [dialog, tracker]);
+  }, [dialog, tracker, resetChangelogSequence]);
 
   const handleDialogCancel = useCallback(() => {
     if (!dialog) return;
@@ -95,23 +97,14 @@ function AppContent() {
         setShowChangelog(true);
         return;
       } else {
-        awaitingClearFoodNoRef.current = false;
+        resetChangelogSequence();
       }
-    } else if (dialog.kind === 'submit') {
-      if (dialog.variant === 'exercise') {
-        awaitingSubmitFoodNoRef.current = true;
-      } else if (dialog.variant === 'food' && awaitingSubmitFoodNoRef.current) {
-        awaitingSubmitFoodNoRef.current = false;
-        setDialog(null);
-        setShowChangelog(true);
-        return;
-      } else {
-        awaitingSubmitFoodNoRef.current = false;
-      }
+    } else {
+      resetChangelogSequence();
     }
 
     setDialog(null);
-  }, [dialog]);
+  }, [dialog, resetChangelogSequence]);
 
   if (!tracker.ready) {
     return (
