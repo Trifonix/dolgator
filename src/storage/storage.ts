@@ -42,6 +42,39 @@ export function sumMealsDay(meals: number[]): number {
   return meals.reduce((a, b) => a + b, 0);
 }
 
+/** Последнее сохранённое значение повторений (по хронологии записей) */
+export function getLastExerciseRepFromHistory(state: AppState): number {
+  let last: number | null = null;
+
+  for (const key of Object.keys(state.days).sort()) {
+    const day = state.days[key];
+    for (const set of day.exerciseSets) {
+      for (const rep of set) {
+        last = rep;
+      }
+    }
+  }
+
+  for (let i = 0; i < state.currentExerciseIndex; i++) {
+    last = state.currentSetDraft[i];
+  }
+
+  return last ?? state.lastExerciseRep ?? DEFAULT_STATE.lastExerciseRep;
+}
+
+/** Последнее сохранённое значение граммов (по хронологии записей) */
+export function getLastMealGramsFromHistory(state: AppState): number {
+  let last: number | null = null;
+
+  for (const key of Object.keys(state.days).sort()) {
+    for (const grams of state.days[key].meals) {
+      last = grams;
+    }
+  }
+
+  return last ?? state.lastMealGrams ?? DEFAULT_STATE.lastMealGrams;
+}
+
 /** Сумма повторений за неделю */
 export function sumExerciseWeek(
   days: Record<string, DayRecord>,

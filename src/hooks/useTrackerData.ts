@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   getDayRecord,
+  getLastExerciseRepFromHistory,
+  getLastMealGramsFromHistory,
   loadState,
   saveState,
   sumExerciseDay,
   sumMealsDay,
 } from '../storage/storage';
-import { AppState, ExerciseSet } from '../types';
+import { AppState, DEFAULT_STATE, ExerciseSet } from '../types';
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays } from '../utils/dates';
 
 export function useTrackerData() {
   const [state, setState] = useState<AppState | null>(null);
-  const [exerciseCounter, setExerciseCounter] = useState(5);
-  const [foodCounter, setFoodCounter] = useState(250);
+  const [exerciseCounter, setExerciseCounter] = useState(DEFAULT_STATE.lastExerciseRep);
+  const [foodCounter, setFoodCounter] = useState(DEFAULT_STATE.lastMealGrams);
 
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
   const weekKeys = useMemo(
@@ -25,8 +27,8 @@ export function useTrackerData() {
   useEffect(() => {
     loadState().then((loaded) => {
       setState(loaded);
-      setExerciseCounter(loaded.lastExerciseRep);
-      setFoodCounter(loaded.lastMealGrams);
+      setExerciseCounter(getLastExerciseRepFromHistory(loaded));
+      setFoodCounter(getLastMealGramsFromHistory(loaded));
     });
   }, []);
 
@@ -102,7 +104,6 @@ export function useTrackerData() {
     };
 
     await persist(next);
-    setFoodCounter(state.lastMealGrams);
   }, [state, todayKey, foodCounter, persist]);
 
   const clearTodayExercise = useCallback(async () => {
