@@ -276,7 +276,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   containerPressed: {
-    opacity: 0.85,
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   body: {
     overflow: 'hidden',
