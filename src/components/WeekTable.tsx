@@ -33,10 +33,11 @@ function dateKey(day: Date): string {
   return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 }
 
-/** Фон ячейки «сегодня»: каждая строка чуть светлее предыдущей */
-function todayCellBackground(rowIndex: number): string {
-  const alpha = 0.06 + rowIndex * 0.04;
-  return `rgba(255, 255, 255, ${Math.min(alpha, 0.26)})`;
+/** Фон ячейки «сегодня»: строка 1 чуть ярче, к 5-й — тусклее (приглушённый градиент) */
+function todayCellBackground(rowIndex: number, maxRows: number): string {
+  const invertedIdx = maxRows - 1 - rowIndex;
+  const alpha = 0.05 + invertedIdx * 0.02;
+  return `rgba(255, 255, 255, ${Math.min(alpha, 0.13)})`;
 }
 
 function todayHeaderBackground(): string {
@@ -142,7 +143,7 @@ export function WeekTable({
                       flex && styles.cellFlex,
                       isToday && todayCellLayout(rowIdx, maxRows),
                       isToday && {
-                        backgroundColor: todayCellBackground(rowIdx),
+                        backgroundColor: todayCellBackground(rowIdx, maxRows),
                       },
                     ]}
                   >
