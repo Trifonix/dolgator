@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { CounterControl } from './src/components/CounterControl';
 import {
   WeekTable,
@@ -18,6 +18,14 @@ import { useTrackerData } from './src/hooks/useTrackerData';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 
 export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
   const tracker = useTrackerData();
 
   if (!tracker.ready) {
