@@ -97,6 +97,18 @@ function weekendCellBackground(variant: Variant): string {
     : 'rgba(2, 136, 209, 0.07)';
 }
 
+function labelColumnHeaderBackground(variant: Variant): string {
+  return variant === 'exercise'
+    ? 'rgba(156, 39, 176, 0.16)'
+    : 'rgba(2, 136, 209, 0.16)';
+}
+
+function labelColumnCellBackground(variant: Variant): string {
+  return variant === 'exercise'
+    ? 'rgba(156, 39, 176, 0.1)'
+    : 'rgba(2, 136, 209, 0.1)';
+}
+
 export function WeekTable({
   variant,
   weekDays,
@@ -125,7 +137,13 @@ export function WeekTable({
       <View style={[styles.body, flex && styles.bodyFlex]}>
         {/* Заголовок — дни недели */}
         <View style={[styles.headerRow, { backgroundColor: headerPalette.headerBg, borderBottomColor: headerPalette.headerBorder }]}>
-          <View style={styles.cornerCell} />
+          <View
+            style={[
+              styles.cornerCell,
+              styles.labelCorner,
+              { backgroundColor: labelColumnHeaderBackground(variant) },
+            ]}
+          />
           {weekDays.map((day, colIdx) => {
             const key = dateKey(day);
             const isToday = key === todayKey;
@@ -158,7 +176,13 @@ export function WeekTable({
         <View style={[styles.dataRows, flex && styles.dataRowsFlex]}>
           {rows.map((rowIdx) => (
             <View key={rowIdx} style={[styles.row, flex && styles.rowFlex]}>
-              <View style={styles.cornerCell}>
+              <View
+                style={[
+                  styles.cornerCell,
+                  styles.labelCorner,
+                  { backgroundColor: labelColumnCellBackground(variant) },
+                ]}
+              >
                 <Text style={styles.rowLabelText}>{rowIdx + 1}</Text>
               </View>
               {weekDays.map((day, colIdx) => {
@@ -225,7 +249,14 @@ export function WeekTable({
           ))}
 
           <View style={[styles.row, flex && styles.rowFlex, styles.sumRow]}>
-            <View style={styles.cornerCell}>
+            <View
+              style={[
+                styles.cornerCell,
+                styles.labelCorner,
+                styles.labelCornerSum,
+                { backgroundColor: labelColumnCellBackground(variant) },
+              ]}
+            >
               {weekCompare != null && (
                 <View style={styles.weekCompareStack}>
                   <Text
@@ -367,6 +398,13 @@ const styles = StyleSheet.create({
     width: 26,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  labelCorner: {
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.border,
+  },
+  labelCornerSum: {
+    borderBottomLeftRadius: 3,
   },
   headerRow: {
     flexDirection: 'row',
