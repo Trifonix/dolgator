@@ -137,7 +137,10 @@ function AppContent() {
     <MobileScreen>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <StatusBar style="light" />
-        <View style={styles.main}>
+        <View
+          style={styles.main}
+          pointerEvents={dialog !== null ? 'none' : 'auto'}
+        >
           <View style={styles.half}>
             <WeekTable
               variant="exercise"

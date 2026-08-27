@@ -30,9 +30,9 @@ export function ConfirmDialog({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={() => {}}
     >
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <View style={styles.backdrop}>
         <View style={[styles.box, { borderColor: palette.primary }]}>
           <Text style={styles.message}>{message}</Text>
           <View style={styles.actions}>
@@ -52,7 +52,7 @@ export function ConfirmDialog({
             </Pressable>
           </View>
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
