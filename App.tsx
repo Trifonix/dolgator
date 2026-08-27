@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   StyleSheet,
   Text,
@@ -21,7 +22,7 @@ import { useTrackerData } from './src/hooks/useTrackerData';
 import { ChangelogScreen } from './src/screens/ChangelogScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, ANDROID_NAV_BAR_MIN, GAP } from './src/theme/layout';
-import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from './src/version';
+import { APP_NAME, APP_VERSION, DEVELOPER_NAME, DEVELOPER_URL, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
 
@@ -170,8 +171,16 @@ function AppContent() {
 
           <View style={styles.versionRow}>
             <View style={styles.versionLine} />
-            <Text style={styles.versionText} numberOfLines={1}>
-              v{APP_VERSION} · {formatLastCommit(LAST_COMMIT_AT)}
+            <Text style={styles.versionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+              <Text style={styles.versionAppName}>{APP_NAME} </Text>
+              <Text style={styles.versionNumber}>v{APP_VERSION}</Text>
+              <Text style={styles.versionDate}> - {formatLastCommit(LAST_COMMIT_AT)} - </Text>
+              <Text
+                style={styles.versionAuthor}
+                onPress={() => Linking.openURL(DEVELOPER_URL)}
+              >
+                {DEVELOPER_NAME}
+              </Text>
             </Text>
             <View style={styles.versionLine} />
           </View>
@@ -249,9 +258,27 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   versionText: {
-    color: colors.textMuted,
     fontSize: 9,
-    opacity: 0.5,
+    opacity: 0.9,
     flexShrink: 0,
+  },
+  versionAppName: {
+    color: colors.exercise.primary,
+    fontWeight: '700',
+  },
+  versionNumber: {
+    color: colors.food.primary,
+    fontWeight: '700',
+  },
+  versionDate: {
+    color: colors.textMuted,
+    fontWeight: '500',
+  },
+  versionAuthor: {
+    color: '#ffd54f',
+    fontWeight: '700',
+    textShadowColor: 'rgba(255, 213, 79, 0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
 });

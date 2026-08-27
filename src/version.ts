@@ -4,7 +4,11 @@
  * 2. Обновить LAST_COMMIT_AT (дата/время коммита, ISO 8601)
  * 3. Добавить запись в CHANGELOG.md и src/changelog.ts
  */
+export const APP_NAME = 'Dolgator';
 export const APP_VERSION = '0.1.5';
+
+export const DEVELOPER_NAME = 'Trifonix';
+export const DEVELOPER_URL = 'https://t.me/trifonixwebsites';
 
 /** Дата и время последнего коммита (ISO 8601) */
 export const LAST_COMMIT_AT = '2026-08-28T00:50:00+03:00';
