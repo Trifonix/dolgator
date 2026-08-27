@@ -74,6 +74,11 @@ export function exercisesToTableRows(exercises: ExerciseColumns): ExerciseCell[]
   ]);
 }
 
+/** Все 15 подходов за день заполнены (5 × 3 упражнения) */
+export function isExerciseDayFull(exercises: ExerciseColumns): boolean {
+  return exercises.every((col) => col.length >= MAX_SETS);
+}
+
 export function sumExerciseDay(exercises: ExerciseColumns): number {
   return exercises[0].reduce((a, b) => a + b, 0)
     + exercises[1].reduce((a, b) => a + b, 0)

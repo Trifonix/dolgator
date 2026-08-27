@@ -16,6 +16,7 @@ interface CounterControlProps {
   onValuePress: () => void;
   variant: 'exercise' | 'food';
   compact?: boolean;
+  submitDisabled?: boolean;
 }
 
 export function CounterControl({
@@ -25,10 +26,13 @@ export function CounterControl({
   onValuePress,
   variant,
   compact = false,
+  submitDisabled = false,
 }: CounterControlProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
   const btnSize = compact ? 40 : 52;
   const valueSize = compact ? 26 : 36;
+  const valueColor = submitDisabled ? colors.textMuted : palette.primary;
+  const valueBorder = submitDisabled ? colors.border : palette.primary;
 
   return (
     <View style={[styles.wrapper, compact && styles.wrapperCompact]}>
@@ -46,15 +50,17 @@ export function CounterControl({
         </Pressable>
 
         <Pressable
-          onPress={onValuePress}
+          onPress={submitDisabled ? undefined : onValuePress}
+          disabled={submitDisabled}
           style={({ pressed }) => [
             styles.valueBox,
             compact && styles.valueBoxCompact,
-            { borderColor: palette.primary, shadowColor: palette.glow },
-            pressed && styles.valueBoxPressed,
+            { borderColor: valueBorder, shadowColor: palette.glow },
+            submitDisabled && styles.valueBoxDisabled,
+            !submitDisabled && pressed && styles.valueBoxPressed,
           ]}
         >
-          <Text style={[styles.value, { fontSize: valueSize, color: palette.primary }]}>{value}</Text>
+          <Text style={[styles.value, { fontSize: valueSize, color: valueColor }]}>{value}</Text>
         </Pressable>
 
         <Pressable
@@ -131,6 +137,11 @@ const styles = StyleSheet.create({
   valueBoxPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.97 }],
+  },
+  valueBoxDisabled: {
+    opacity: 0.45,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   value: {
     fontWeight: '700',

@@ -5,6 +5,7 @@ import {
   getLastExerciseRepFromHistory,
   getLastMealGramsFromHistory,
   inferCurrentExerciseIndex,
+  isExerciseDayFull,
   loadState,
   saveState,
   sumExerciseDay,
@@ -164,6 +165,12 @@ export function useTrackerData() {
     ? getDayExercises(getDayRecord(state, todayKey))[state.currentExerciseIndex].length
     : 0;
 
+  const isExerciseDayFullToday = state
+    ? isExerciseDayFull(getDayExercises(getDayRecord(state, todayKey)))
+    : false;
+
+  const isFoodDayFullToday = todayMealsCount >= MAX_MEALS;
+
   const weekExerciseData = weekKeys.map((key) => {
     if (!state) return { exercises: EMPTY_EXERCISES, sum: 0 };
     const exercises = getDayExercises(getDayRecord(state, key));
@@ -204,6 +211,8 @@ export function useTrackerData() {
     currentExerciseLabel,
     todayMealsCount,
     todayExerciseSetsCount,
+    isExerciseDayFullToday,
+    isFoodDayFullToday,
     weekExerciseData,
     weekFoodData,
     weekExerciseTotal,

@@ -154,6 +154,7 @@ function AppContent() {
               onDecrement={() => tracker.adjustExercise(-1)}
               onIncrement={() => tracker.adjustExercise(1)}
               onValuePress={() => openSubmitDialog('exercise')}
+              submitDisabled={tracker.isExerciseDayFullToday}
               compact
             />
           </View>
@@ -173,6 +174,7 @@ function AppContent() {
               onDecrement={() => tracker.adjustFood(-10)}
               onIncrement={() => tracker.adjustFood(10)}
               onValuePress={() => openSubmitDialog('food')}
+              submitDisabled={tracker.isFoodDayFullToday}
               compact
             />
             <WeekTable
