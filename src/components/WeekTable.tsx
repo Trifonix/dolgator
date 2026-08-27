@@ -81,6 +81,22 @@ function weekCompareColor(
   return current <= previous ? colors.compareGood : colors.compareBad;
 }
 
+function isWeekendColumn(colIdx: number): boolean {
+  return colIdx >= 5;
+}
+
+function weekendHeaderBackground(variant: Variant): string {
+  return variant === 'exercise'
+    ? 'rgba(156, 39, 176, 0.14)'
+    : 'rgba(2, 136, 209, 0.14)';
+}
+
+function weekendCellBackground(variant: Variant): string {
+  return variant === 'exercise'
+    ? 'rgba(156, 39, 176, 0.07)'
+    : 'rgba(2, 136, 209, 0.07)';
+}
+
 export function WeekTable({
   variant,
   weekDays,
@@ -110,15 +126,17 @@ export function WeekTable({
         {/* Заголовок — дни недели */}
         <View style={[styles.headerRow, { backgroundColor: headerPalette.headerBg, borderBottomColor: headerPalette.headerBorder }]}>
           <View style={styles.cornerCell} />
-          {weekDays.map((day) => {
+          {weekDays.map((day, colIdx) => {
             const key = dateKey(day);
             const isToday = key === todayKey;
+            const isWeekend = isWeekendColumn(colIdx);
             return (
               <View
                 key={key}
                 style={[
                   styles.headerCell,
                   isToday && todayHeaderLayout(),
+                  !isToday && isWeekend && { backgroundColor: weekendHeaderBackground(variant) },
                   isToday && { backgroundColor: todayHeaderBackground() },
                 ]}
               >
@@ -146,6 +164,7 @@ export function WeekTable({
               {weekDays.map((day, colIdx) => {
                 const key = dateKey(day);
                 const isToday = key === todayKey;
+                const isWeekend = isWeekendColumn(colIdx);
                 const cell = columns.items[colIdx]?.[rowIdx];
 
                 return (
@@ -155,6 +174,7 @@ export function WeekTable({
                       styles.cell,
                       flex && styles.cellFlex,
                       isToday && todayCellLayout(rowIdx, maxRows),
+                      !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
                       isToday && {
                         backgroundColor: todayCellBackground(rowIdx, maxRows),
                       },
@@ -240,6 +260,8 @@ export function WeekTable({
               const day = weekDays[colIdx];
               const key = dateKey(day);
               const isFirstCol = colIdx === 0;
+              const isToday = key === todayKey;
+              const isWeekend = isWeekendColumn(colIdx);
 
               return (
                 <View
@@ -249,6 +271,7 @@ export function WeekTable({
                     styles.sumCellRight,
                     isFirstCol && styles.sumCellLeft,
                     flex && styles.cellFlex,
+                    !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
                   ]}
                 >
                   <Text
