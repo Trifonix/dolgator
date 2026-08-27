@@ -252,9 +252,18 @@ export function WeekTable({
             <View
               style={[
                 styles.cornerCell,
-                styles.labelCorner,
                 styles.labelCornerSum,
-                { backgroundColor: labelColumnCellBackground(variant) },
+                {
+                  backgroundColor: labelColumnCellBackground(variant),
+                  borderTopWidth: 1.5,
+                  borderRightWidth: 1.5,
+                  borderLeftWidth: 1.5,
+                  borderBottomWidth: 1.5,
+                  borderTopColor: palette.primary,
+                  borderRightColor: palette.primary,
+                  borderLeftColor: palette.primary,
+                  borderBottomColor: palette.primary,
+                },
               ]}
             >
               {weekCompare != null && (
