@@ -43,8 +43,10 @@ function AppContent() {
   const tracker = useTrackerData();
   const [dialog, setDialog] = useState<DialogState>(null);
   const [showChangelog, setShowChangelog] = useState(false);
-  /** После «Нет» на «Вы сделали?» — ждём «Нет» на «Вы съели?» для экрана истории */
-  const awaitingFoodNoRef = useRef(false);
+  /** Секрет истории через «Вы сделали?» → Нет → «Вы съели?» → Нет */
+  const awaitingSubmitFoodNoRef = useRef(false);
+  /** Секрет истории: 5 тапов верх → Нет → 5 тапов низ → Нет */
+  const awaitingClearFoodNoRef = useRef(false);
 
   const openSubmitDialog = useCallback((variant: TableVariant) => {
     setDialog({ kind: 'submit', variant });
@@ -70,10 +72,11 @@ function AppContent() {
   const handleDialogConfirm = useCallback(() => {
     if (!dialog) return;
     if (dialog.kind === 'clear') {
+      awaitingClearFoodNoRef.current = false;
       if (dialog.variant === 'exercise') tracker.clearTodayExercise();
       else tracker.clearTodayFood();
     } else {
-      awaitingFoodNoRef.current = false;
+      awaitingSubmitFoodNoRef.current = false;
       if (dialog.variant === 'exercise') tracker.submitExercise();
       else tracker.submitFood();
     }
@@ -83,16 +86,27 @@ function AppContent() {
   const handleDialogCancel = useCallback(() => {
     if (!dialog) return;
 
-    if (dialog.kind === 'submit') {
+    if (dialog.kind === 'clear') {
       if (dialog.variant === 'exercise') {
-        awaitingFoodNoRef.current = true;
-      } else if (dialog.variant === 'food' && awaitingFoodNoRef.current) {
-        awaitingFoodNoRef.current = false;
+        awaitingClearFoodNoRef.current = true;
+      } else if (dialog.variant === 'food' && awaitingClearFoodNoRef.current) {
+        awaitingClearFoodNoRef.current = false;
         setDialog(null);
         setShowChangelog(true);
         return;
       } else {
-        awaitingFoodNoRef.current = false;
+        awaitingClearFoodNoRef.current = false;
+      }
+    } else if (dialog.kind === 'submit') {
+      if (dialog.variant === 'exercise') {
+        awaitingSubmitFoodNoRef.current = true;
+      } else if (dialog.variant === 'food' && awaitingSubmitFoodNoRef.current) {
+        awaitingSubmitFoodNoRef.current = false;
+        setDialog(null);
+        setShowChangelog(true);
+        return;
+      } else {
+        awaitingSubmitFoodNoRef.current = false;
       }
     }
 
