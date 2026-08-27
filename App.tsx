@@ -141,6 +141,10 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={exerciseColumns}
               maxRows={MAX_SETS}
+              weekCompare={{
+                current: tracker.weekExerciseTotal,
+                previous: tracker.prevWeekExerciseTotal,
+              }}
               onTap={() => registerTap('exercise')}
               flex
             />
@@ -177,6 +181,10 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={foodColumns}
               maxRows={MAX_MEALS}
+              weekCompare={{
+                current: tracker.weekFoodTotal,
+                previous: tracker.prevWeekFoodTotal,
+              }}
               onTap={() => registerTap('food')}
               flex
             />

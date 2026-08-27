@@ -28,4 +28,17 @@ export function getDayOfMonth(date: Date): number {
   return date.getDate();
 }
 
+/** Понедельник — воскресенье предыдущей недели (относительно переданной) */
+export function getPreviousWeekDays(currentWeekDays: Date[]): Date[] {
+  const monday = new Date(currentWeekDays[0]);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - 7);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
 export { STORAGE_KEY };

@@ -20,6 +20,8 @@ export const colors = {
 
   text: '#e8e8f0',
   textMuted: '#8888a0',
+  compareGood: '#66bb6a',
+  compareBad: '#ef5350',
   border: '#2a2a3a',
   borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
   borderGlowFood: 'rgba(0, 212, 255, 0.4)',

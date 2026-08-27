@@ -21,6 +21,7 @@ interface WeekTableProps {
   todayKey: string;
   columns: { items: TableCell[][]; sums: number[] };
   maxRows: number;
+  weekCompare?: { current: number; previous: number };
   onTap?: () => void;
   flex?: boolean;
 }
@@ -69,12 +70,24 @@ function todayHeaderLayout(): ViewStyle {
   };
 }
 
+function weekCompareColor(
+  variant: Variant,
+  current: number,
+  previous: number,
+): string {
+  if (variant === 'exercise') {
+    return current >= previous ? colors.compareGood : colors.compareBad;
+  }
+  return current <= previous ? colors.compareGood : colors.compareBad;
+}
+
 export function WeekTable({
   variant,
   weekDays,
   todayKey,
   columns,
   maxRows,
+  weekCompare,
   onTap,
   flex = false,
 }: WeekTableProps) {
@@ -192,7 +205,37 @@ export function WeekTable({
           ))}
 
           <View style={[styles.row, flex && styles.rowFlex, styles.sumRow]}>
-            <View style={styles.cornerCell} />
+            <View style={styles.cornerCell}>
+              {weekCompare != null && (
+                <View style={styles.weekCompareStack}>
+                  <Text
+                    style={styles.weekComparePrev}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                  >
+                    {weekCompare.previous}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.weekCompareCurrent,
+                      {
+                        color: weekCompareColor(
+                          variant,
+                          weekCompare.current,
+                          weekCompare.previous,
+                        ),
+                      },
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.5}
+                  >
+                    {weekCompare.current}
+                  </Text>
+                </View>
+              )}
+            </View>
             {columns.sums.map((sum, colIdx) => {
               const day = weekDays[colIdx];
               const key = dateKey(day);
@@ -298,7 +341,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cornerCell: {
-    width: 22,
+    width: 26,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -373,5 +416,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+  },
+  weekCompareStack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  weekCompareCurrent: {
+    fontSize: 8,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    lineHeight: 9,
+  },
+  weekComparePrev: {
+    fontSize: 7,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+    color: colors.textMuted,
+    lineHeight: 8,
   },
 });

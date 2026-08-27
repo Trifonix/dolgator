@@ -8,11 +8,13 @@ import {
   loadState,
   saveState,
   sumExerciseDay,
+  sumExerciseWeek,
+  sumFoodWeek,
   sumMealsDay,
 } from '../storage/storage';
 import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../types';
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
-import { formatDateKey, getCurrentWeekDays } from '../utils/dates';
+import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
 
 function syncExerciseIndex(state: AppState, todayKey: string): AppState {
   const exercises = getDayExercises(getDayRecord(state, todayKey));
@@ -30,6 +32,10 @@ export function useTrackerData() {
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
   const weekKeys = useMemo(
     () => weekDays.map((d) => formatDateKey(d)),
+    [weekDays],
+  );
+  const prevWeekKeys = useMemo(
+    () => getPreviousWeekDays(weekDays).map((d) => formatDateKey(d)),
     [weekDays],
   );
   const todayKey = formatDateKey(new Date());
@@ -170,6 +176,19 @@ export function useTrackerData() {
     return { meals: record.meals, sum: sumMealsDay(record.meals) };
   });
 
+  const weekExerciseTotal = state
+    ? sumExerciseWeek(state.days, weekKeys)
+    : 0;
+  const prevWeekExerciseTotal = state
+    ? sumExerciseWeek(state.days, prevWeekKeys)
+    : 0;
+  const weekFoodTotal = state
+    ? sumFoodWeek(state.days, weekKeys)
+    : 0;
+  const prevWeekFoodTotal = state
+    ? sumFoodWeek(state.days, prevWeekKeys)
+    : 0;
+
   return {
     ready: state !== null,
     weekDays,
@@ -187,6 +206,10 @@ export function useTrackerData() {
     todayExerciseSetsCount,
     weekExerciseData,
     weekFoodData,
+    weekExerciseTotal,
+    prevWeekExerciseTotal,
+    weekFoodTotal,
+    prevWeekFoodTotal,
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
   };
 }
