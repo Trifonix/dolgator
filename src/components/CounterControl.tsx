@@ -7,6 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { colors } from '../theme/colors';
+import { GAP } from '../theme/layout';
 
 interface CounterControlProps {
   value: number;
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   wrapperCompact: {
-    paddingVertical: 2,
+    paddingVertical: GAP * 0.4,
   },
   row: {
     flexDirection: 'row',

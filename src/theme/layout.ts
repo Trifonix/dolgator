@@ -1,9 +1,11 @@
 import { Platform, ViewStyle } from 'react-native';
 
-/**
- * Эталон 720×1280 px (@2x) → 360×640 dp — стандартная логическая ширина смартфона.
- * На web показываем именно такой размер, масштабируя под окно браузера.
- */
+/** Базовый размер шрифта для расчёта em-отступов */
+export const BASE_FONT = 16;
+/** ~1.2em — внешние отступы и зазоры между блоками */
+export const GAP = Math.round(BASE_FONT * 1.2);
+
+/** Эталон 720×1280 px (@2x) → 360×640 dp */
 export const REF_WIDTH = 360;
 export const REF_HEIGHT = 640;
 

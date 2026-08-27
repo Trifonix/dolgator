@@ -15,7 +15,7 @@ import {
 } from './src/components/WeekTable';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
-import { fullScreen } from './src/theme/layout';
+import { fullScreen, GAP } from './src/theme/layout';
 
 export default function App() {
   return (
@@ -105,20 +105,20 @@ const styles = StyleSheet.create({
   },
   main: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: GAP,
+    paddingVertical: GAP,
     overflow: 'hidden',
   },
   half: {
     flex: 1,
     overflow: 'hidden',
     justifyContent: 'space-between',
-    gap: 2,
+    gap: GAP,
   },
   divider: {
     height: 1,
     backgroundColor: colors.border,
-    marginVertical: 4,
+    marginVertical: GAP,
     opacity: 0.4,
   },
 });
