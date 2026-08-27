@@ -13,6 +13,7 @@ interface CounterControlProps {
   value: number;
   onDecrement: () => void;
   onIncrement: () => void;
+  onValuePress: () => void;
   variant: 'exercise' | 'food';
   compact?: boolean;
 }
@@ -21,6 +22,7 @@ export function CounterControl({
   value,
   onDecrement,
   onIncrement,
+  onValuePress,
   variant,
   compact = false,
 }: CounterControlProps) {
@@ -43,15 +45,17 @@ export function CounterControl({
           <Text style={[styles.btnText, compact && styles.btnTextCompact, { color: palette.primary }]}>−</Text>
         </Pressable>
 
-        <View
-          style={[
+        <Pressable
+          onPress={onValuePress}
+          style={({ pressed }) => [
             styles.valueBox,
             compact && styles.valueBoxCompact,
             { borderColor: palette.primary, shadowColor: palette.glow },
+            pressed && styles.valueBoxPressed,
           ]}
         >
           <Text style={[styles.value, { fontSize: valueSize, color: palette.primary }]}>{value}</Text>
-        </View>
+        </Pressable>
 
         <Pressable
           onPress={onIncrement}
@@ -123,6 +127,10 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: 10,
     paddingVertical: 4,
+  },
+  valueBoxPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
   },
   value: {
     fontWeight: '700',

@@ -17,7 +17,7 @@ interface WeekTableProps {
   todayKey: string;
   columns: { items: (string | number)[][]; sums: number[] };
   maxRows: number;
-  onPress: () => void;
+  onTap?: () => void;
   flex?: boolean;
 }
 
@@ -35,7 +35,7 @@ export function WeekTable({
   todayKey,
   columns,
   maxRows,
-  onPress,
+  onTap,
   flex = false,
 }: WeekTableProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
@@ -43,12 +43,13 @@ export function WeekTable({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={onTap}
+      disabled={!onTap}
       style={({ pressed }) => [
         styles.container,
         flex && styles.containerFlex,
         { borderColor: palette.primary, shadowColor: palette.glow },
-        pressed && styles.containerPressed,
+        onTap && pressed && styles.containerPressed,
       ]}
     >
       <View style={[styles.body, flex && styles.bodyFlex]}>

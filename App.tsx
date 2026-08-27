@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -19,7 +19,12 @@ import { useTrackerData } from './src/hooks/useTrackerData';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, GAP } from './src/theme/layout';
 
-type ClearTarget = 'exercise' | 'food';
+type TableVariant = 'exercise' | 'food';
+
+type DialogState =
+  | { kind: 'submit'; variant: TableVariant }
+  | { kind: 'clear'; variant: TableVariant }
+  | null;
 
 export default function App() {
   return (
@@ -33,25 +38,34 @@ export default function App() {
 
 function AppContent() {
   const tracker = useTrackerData();
-  const [clearTarget, setClearTarget] = useState<ClearTarget | null>(null);
+  const [dialog, setDialog] = useState<DialogState>(null);
 
-  const { registerTap } = useTableClearGesture(setClearTarget);
+  const { registerTap } = useTableClearGesture((variant) => {
+    setDialog({ kind: 'clear', variant });
+  });
 
-  const handleExercisePress = useCallback(() => {
-    tracker.submitExercise();
-    registerTap('exercise');
-  }, [tracker, registerTap]);
+  const dialogMessage = useMemo(() => {
+    if (!dialog) return '';
+    if (dialog.kind === 'clear') {
+      return 'Очистить данные в этой таблице за сегодня?';
+    }
+    if (dialog.variant === 'exercise') {
+      return `Вы сделали ${tracker.exerciseCounter} повторений?`;
+    }
+    return `Вы съели ${tracker.foodCounter} грамм?`;
+  }, [dialog, tracker.exerciseCounter, tracker.foodCounter]);
 
-  const handleFoodPress = useCallback(() => {
-    tracker.submitFood();
-    registerTap('food');
-  }, [tracker, registerTap]);
-
-  const handleClearConfirm = useCallback(() => {
-    if (clearTarget === 'exercise') tracker.clearTodayExercise();
-    else if (clearTarget === 'food') tracker.clearTodayFood();
-    setClearTarget(null);
-  }, [clearTarget, tracker]);
+  const handleDialogConfirm = useCallback(() => {
+    if (!dialog) return;
+    if (dialog.kind === 'clear') {
+      if (dialog.variant === 'exercise') tracker.clearTodayExercise();
+      else tracker.clearTodayFood();
+    } else {
+      if (dialog.variant === 'exercise') tracker.submitExercise();
+      else tracker.submitFood();
+    }
+    setDialog(null);
+  }, [dialog, tracker]);
 
   if (!tracker.ready) {
     return (
@@ -76,7 +90,7 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={exerciseColumns}
               maxRows={MAX_SETS}
-              onPress={handleExercisePress}
+              onTap={() => registerTap('exercise')}
               flex
             />
             <CounterControl
@@ -84,6 +98,7 @@ function AppContent() {
               value={tracker.exerciseCounter}
               onDecrement={() => tracker.adjustExercise(-1)}
               onIncrement={() => tracker.adjustExercise(1)}
+              onValuePress={() => setDialog({ kind: 'submit', variant: 'exercise' })}
               compact
             />
           </View>
@@ -96,6 +111,7 @@ function AppContent() {
               value={tracker.foodCounter}
               onDecrement={() => tracker.adjustFood(-10)}
               onIncrement={() => tracker.adjustFood(10)}
+              onValuePress={() => setDialog({ kind: 'submit', variant: 'food' })}
               compact
             />
             <WeekTable
@@ -104,18 +120,18 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={foodColumns}
               maxRows={MAX_MEALS}
-              onPress={handleFoodPress}
+              onTap={() => registerTap('food')}
               flex
             />
           </View>
         </View>
 
         <ConfirmDialog
-          visible={clearTarget !== null}
-          message="Очистить данные в этой таблице за сегодня?"
-          variant={clearTarget ?? 'exercise'}
-          onConfirm={handleClearConfirm}
-          onCancel={() => setClearTarget(null)}
+          visible={dialog !== null}
+          message={dialogMessage}
+          variant={dialog?.variant ?? 'exercise'}
+          onConfirm={handleDialogConfirm}
+          onCancel={() => setDialog(null)}
         />
       </SafeAreaView>
     </MobileScreen>
