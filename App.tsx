@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { ConfirmDialog } from './src/components/ConfirmDialog';
 import { CounterControl } from './src/components/CounterControl';
 import { MobileScreen } from './src/components/MobileScreen';
 import {
@@ -13,9 +14,12 @@ import {
   buildExerciseColumns,
   buildFoodColumns,
 } from './src/components/WeekTable';
+import { useTableClearGesture } from './src/hooks/useTableClearGesture';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, GAP } from './src/theme/layout';
+
+type ClearTarget = 'exercise' | 'food';
 
 export default function App() {
   return (
@@ -29,6 +33,25 @@ export default function App() {
 
 function AppContent() {
   const tracker = useTrackerData();
+  const [clearTarget, setClearTarget] = useState<ClearTarget | null>(null);
+
+  const { registerTap } = useTableClearGesture(setClearTarget);
+
+  const handleExercisePress = useCallback(() => {
+    tracker.submitExercise();
+    registerTap('exercise');
+  }, [tracker, registerTap]);
+
+  const handleFoodPress = useCallback(() => {
+    tracker.submitFood();
+    registerTap('food');
+  }, [tracker, registerTap]);
+
+  const handleClearConfirm = useCallback(() => {
+    if (clearTarget === 'exercise') tracker.clearTodayExercise();
+    else if (clearTarget === 'food') tracker.clearTodayFood();
+    setClearTarget(null);
+  }, [clearTarget, tracker]);
 
   if (!tracker.ready) {
     return (
@@ -46,7 +69,6 @@ function AppContent() {
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <StatusBar style="light" />
         <View style={styles.main}>
-          {/* ── Упражнения ── */}
           <View style={styles.half}>
             <WeekTable
               variant="exercise"
@@ -54,7 +76,7 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={exerciseColumns}
               maxRows={MAX_SETS}
-              onPress={tracker.submitExercise}
+              onPress={handleExercisePress}
               flex
             />
             <CounterControl
@@ -68,7 +90,6 @@ function AppContent() {
 
           <View style={styles.divider} />
 
-          {/* ── Еда ── */}
           <View style={styles.half}>
             <CounterControl
               variant="food"
@@ -83,11 +104,19 @@ function AppContent() {
               todayKey={tracker.todayKey}
               columns={foodColumns}
               maxRows={MAX_MEALS}
-              onPress={tracker.submitFood}
+              onPress={handleFoodPress}
               flex
             />
           </View>
         </View>
+
+        <ConfirmDialog
+          visible={clearTarget !== null}
+          message="Очистить данные в этой таблице за сегодня?"
+          variant={clearTarget ?? 'exercise'}
+          onConfirm={handleClearConfirm}
+          onCancel={() => setClearTarget(null)}
+        />
       </SafeAreaView>
     </MobileScreen>
   );
