@@ -6,11 +6,11 @@ const TAP_WINDOW_MS = 5000;
 type TableVariant = 'exercise' | 'food';
 
 interface TableGesturesOptions {
-  /** 5 тапов по таблице → открыть диалог подтверждения */
-  onSubmit: (variant: TableVariant) => void;
+  /** 5 тапов по таблице → очистка данных за сегодня */
+  onClear: (variant: TableVariant) => void;
 }
 
-export function useTableGestures({ onSubmit }: TableGesturesOptions) {
+export function useTableGestures({ onClear }: TableGesturesOptions) {
   const tapsRef = useRef<Record<TableVariant, number[]>>({
     exercise: [],
     food: [],
@@ -27,10 +27,10 @@ export function useTableGestures({ onSubmit }: TableGesturesOptions) {
 
       if (recent.length >= TAP_COUNT) {
         tapsRef.current[variant] = [];
-        onSubmit(variant);
+        onClear(variant);
       }
     },
-    [onSubmit],
+    [onClear],
   );
 
   return { registerTap };

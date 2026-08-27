@@ -24,9 +24,10 @@ import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
 
-type DialogState = {
-  variant: TableVariant;
-} | null;
+type DialogState =
+  | { kind: 'submit'; variant: TableVariant }
+  | { kind: 'clear'; variant: TableVariant }
+  | null;
 
 export default function App() {
   return (
@@ -46,13 +47,20 @@ function AppContent() {
   const awaitingFoodNoRef = useRef(false);
 
   const openSubmitDialog = useCallback((variant: TableVariant) => {
-    setDialog({ variant });
+    setDialog({ kind: 'submit', variant });
   }, []);
 
-  const { registerTap } = useTableGestures({ onSubmit: openSubmitDialog });
+  const openClearDialog = useCallback((variant: TableVariant) => {
+    setDialog({ kind: 'clear', variant });
+  }, []);
+
+  const { registerTap } = useTableGestures({ onClear: openClearDialog });
 
   const dialogMessage = useMemo(() => {
     if (!dialog) return '';
+    if (dialog.kind === 'clear') {
+      return 'Очистить данные в этой таблице за сегодня?';
+    }
     if (dialog.variant === 'exercise') {
       return `Вы сделали ${tracker.exerciseCounter} повторений?`;
     }
@@ -61,24 +69,31 @@ function AppContent() {
 
   const handleDialogConfirm = useCallback(() => {
     if (!dialog) return;
-    awaitingFoodNoRef.current = false;
-    if (dialog.variant === 'exercise') tracker.submitExercise();
-    else tracker.submitFood();
+    if (dialog.kind === 'clear') {
+      if (dialog.variant === 'exercise') tracker.clearTodayExercise();
+      else tracker.clearTodayFood();
+    } else {
+      awaitingFoodNoRef.current = false;
+      if (dialog.variant === 'exercise') tracker.submitExercise();
+      else tracker.submitFood();
+    }
     setDialog(null);
   }, [dialog, tracker]);
 
   const handleDialogCancel = useCallback(() => {
     if (!dialog) return;
 
-    if (dialog.variant === 'exercise') {
-      awaitingFoodNoRef.current = true;
-    } else if (dialog.variant === 'food' && awaitingFoodNoRef.current) {
-      awaitingFoodNoRef.current = false;
-      setDialog(null);
-      setShowChangelog(true);
-      return;
-    } else {
-      awaitingFoodNoRef.current = false;
+    if (dialog.kind === 'submit') {
+      if (dialog.variant === 'exercise') {
+        awaitingFoodNoRef.current = true;
+      } else if (dialog.variant === 'food' && awaitingFoodNoRef.current) {
+        awaitingFoodNoRef.current = false;
+        setDialog(null);
+        setShowChangelog(true);
+        return;
+      } else {
+        awaitingFoodNoRef.current = false;
+      }
     }
 
     setDialog(null);
