@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dolgator",
     "slug": "dolgator",
-    "version": "1.0.0",
+    "version": "0.1.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -17,14 +17,24 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a12"
       },
-      "package": "com.dolgator.app"
+      "package": "com.dolgator.app",
+      "versionCode": 6
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ]
   }
 }

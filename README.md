@@ -40,13 +40,55 @@ npm start
 
 Или подключите эмулятор Android Studio и нажмите `a` в терминале Expo.
 
-### 5. Сборка APK (позже)
+### 5. Сборка APK для Android (тест на телефоне)
+
+#### Вариант A — облачная сборка EAS (рекомендуется)
+
+Не нужны Android Studio и JDK. Сборка на серверах Expo, в конце — **ссылка на скачивание APK**.
 
 ```bash
-npx eas build --platform android --profile preview
+# один раз: войти в аккаунт Expo (бесплатный)
+npx eas login
+
+# один раз: привязать проект (создаст projectId в app.json)
+npx eas init
+
+# собрать оптимизированный APK (~5–15 мин)
+npm run build:apk
 ```
 
-(Нужен аккаунт Expo и `eas-cli`.)
+После сборки в терминале появится ссылка вида `https://expo.dev/accounts/.../builds/...` — откройте на телефоне и скачайте APK.
+
+**Установка на телефон:**
+1. Скачайте APK по ссылке
+2. Разрешите установку из неизвестных источников (если спросит)
+3. Установите и запустите **Dolgator**
+
+При следующих версиях перед сборкой обновите в `app.json`:
+- `version` — как в `src/version.ts` (например `0.1.6`)
+- `android.versionCode` — целое число, каждый релиз +1 (6, 7, 8…)
+
+#### Вариант B — локальная сборка (Windows)
+
+Нужны: **JDK 17**, **Android Studio** (SDK + build-tools).
+
+```bash
+npm install
+npm run build:apk:local
+```
+
+APK будет здесь:
+`android/app/build/outputs/apk/release/app-release.apk`
+
+> Локальный release может потребовать настройки подписи (keystore). Для быстрого теста проще вариант A.
+
+#### Оптимизация
+
+В release-сборке включены:
+- **Minify** (Proguard/R8) — уменьшение размера кода
+- **Shrink resources** — удаление неиспользуемых ресурсов
+
+Настройки в `app.json` → plugin `expo-build-properties`.
 
 ## Как пользоваться
 
