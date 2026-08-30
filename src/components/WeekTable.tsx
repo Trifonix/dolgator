@@ -262,7 +262,30 @@ export function WeekTable({
               styles.labelCorner,
               { backgroundColor: labelColumnHeaderBackground(variant) },
             ]}
-          />
+          >
+            {variant === 'exercise' ? (
+              <View style={styles.cornerNgs}>
+                {(['Н', 'Г', 'С'] as const).map((letter, i) => (
+                  <Text
+                    key={letter}
+                    style={[styles.cornerLabel, { color: EXERCISE_COLUMN_COLORS[i] }]}
+                    numberOfLines={1}
+                  >
+                    {letter}
+                  </Text>
+                ))}
+              </View>
+            ) : (
+              <Text
+                style={[styles.cornerLabel, { color: headerPalette.headerText }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.55}
+              >
+                ЕДА
+              </Text>
+            )}
+          </View>
           {weekDays.map((day, colIdx) => {
             const key = dateKey(day);
             const isToday = key === todayKey;
@@ -609,6 +632,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.ui,
     fontSize: 8,
     color: colors.textMuted,
+  },
+  cornerNgs: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: 1,
+  },
+  cornerLabel: {
+    fontFamily: fonts.ui,
+    fontSize: 7,
+    fontWeight: '700',
   },
   cellFlex: {
     minHeight: 0,
