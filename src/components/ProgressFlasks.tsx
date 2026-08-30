@@ -159,16 +159,19 @@ function SideNotch({
   side,
   markRatio,
   hasBaseline,
+  flaskHeight,
 }: {
   side: 'left' | 'right';
   markRatio: number;
   hasBaseline: boolean;
+  flaskHeight: number;
 }) {
   if (!hasBaseline) return null;
+  const h = flaskHeight > 0 ? flaskHeight : FLASK_HEIGHT;
   const notchH = PX * 3;
   const bottom = Math.min(
-    FLASK_HEIGHT - notchH,
-    Math.max(2, FLASK_HEIGHT * markRatio - PX * 1.5),
+    h - notchH,
+    Math.max(2, h * markRatio - PX * 1.5),
   );
   const isLeft = side === 'left';
 
@@ -214,11 +217,16 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
 }
 
 function FlaskCaption({ word }: { word: string }) {
+  const [h, setH] = useState(FLASK_HEIGHT);
   const letters = Array.from(word);
-  const fontSize = Math.min(13, Math.floor(FLASK_HEIGHT / letters.length) - 1);
+  const fontSize = Math.min(13, Math.max(8, Math.floor(h / letters.length) - 1));
 
   return (
-    <View style={styles.caption} pointerEvents="none">
+    <View
+      style={styles.caption}
+      pointerEvents="none"
+      onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
+    >
       {letters.map((ch, i) => (
         <Text key={`${ch}-${i}`} style={[styles.captionLetter, { fontSize, lineHeight: fontSize + 1 }]}>
           {ch}
@@ -233,13 +241,18 @@ interface ExerciseFlasksProps {
 }
 
 export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
+  const [h, setH] = useState(0);
+
   return (
     <View style={styles.flaskWithCaption}>
-      <View style={styles.exerciseFlask}>
-        <SideNotch side="left" markRatio={EXERCISE_BAND_LOW} hasBaseline />
-        <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline />
-        <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
-        <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
+      <View
+        style={styles.exerciseFlask}
+        onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
+      >
+        <SideNotch side="left" markRatio={EXERCISE_BAND_LOW} hasBaseline flaskHeight={h} />
+        <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline flaskHeight={h} />
+        <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline flaskHeight={h} />
+        <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline flaskHeight={h} />
         <View style={styles.body}>
           {fills.map((fill, idx) => (
             <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
@@ -265,8 +278,18 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
     <View style={styles.flaskWithCaption}>
       <FlaskCaption word="ГРАММЫ" />
       <View style={styles.foodWrap}>
-        <SideNotch side="left" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
-        <SideNotch side="right" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
+        <SideNotch
+          side="left"
+          markRatio={FOOD_MARK_RATIO}
+          hasBaseline={fill.hasBaseline}
+          flaskHeight={h}
+        />
+        <SideNotch
+          side="right"
+          markRatio={FOOD_MARK_RATIO}
+          hasBaseline={fill.hasBaseline}
+          flaskHeight={h}
+        />
         <View
           style={styles.foodTube}
           onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
@@ -286,13 +309,13 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 const styles = StyleSheet.create({
   flaskWithCaption: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
     flexGrow: 0,
     flexShrink: 0,
     gap: 4,
   },
   caption: {
-    height: FLASK_HEIGHT,
     width: 12,
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -305,13 +328,13 @@ const styles = StyleSheet.create({
   },
   exerciseFlask: {
     width: FLASK_EXERCISE_WIDTH + TICK_GUTTER * 2,
-    height: FLASK_HEIGHT,
     flexGrow: 0,
     flexShrink: 0,
+    alignSelf: 'stretch',
     position: 'relative',
   },
   body: {
-    height: FLASK_HEIGHT,
+    flex: 1,
     marginHorizontal: TICK_GUTTER,
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -346,14 +369,14 @@ const styles = StyleSheet.create({
   },
   foodWrap: {
     width: FLASK_FOOD_WIDTH + TICK_GUTTER * 2,
-    height: FLASK_HEIGHT,
     flexGrow: 0,
     flexShrink: 0,
+    alignSelf: 'stretch',
     position: 'relative',
   },
   foodTube: {
+    flex: 1,
     marginHorizontal: TICK_GUTTER,
-    height: FLASK_HEIGHT,
     borderWidth: 2,
     borderColor: colors.flaskGlass,
     borderTopLeftRadius: 2,

@@ -9,7 +9,7 @@ export const GAP = Math.round(BASE_FONT * 1.2);
 export const REF_WIDTH = 360;
 export const REF_HEIGHT = 640;
 
-/** Фиксированная высота колб — как два ряда счётчиков */
+/** Запасная высота колб, пока служебный блок не задал stretch */
 export const FLASK_HEIGHT = 100;
 /** Общая ширина сосуда повторений и граммов */
 export const FLASK_EXERCISE_WIDTH = 27;

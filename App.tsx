@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   },
   centerBand: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     flexGrow: 0,
     flexShrink: 0,
