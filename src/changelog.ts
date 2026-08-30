@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.2',
+    date: '2026-08-30',
+    items: [
+      'Android: пульс повторений без пропадания цифр (native driver)',
+      'Иконка: пробирка по центру, safe zone — не обрезается маской',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '2026-08-30',
     items: [
