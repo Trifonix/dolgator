@@ -33,8 +33,8 @@ import {
   DEFAULT_ONBOARDING_MEALS,
   EXAMPLE_EXERCISE_BASE,
   buildOnboardingPreviewWeek,
+  randomizeExampleMeals,
   randomizeExampleSets,
-  randomizeFoodWeek,
   spreadExerciseColumnToExtraDays,
 } from '../utils/onboardingSeed';
 
@@ -69,7 +69,7 @@ const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
 const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise', 'food-intro', 'food'];
-const MIN_FOOD_MEALS = 3;
+const MIN_FOOD_MEALS = 1;
 const INTRO_FADE_MS = 280;
 
 function IntroActStep({
@@ -452,9 +452,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [exerciseIndex]);
 
   const applyFoodExample = useCallback(() => {
-    const { monday, extra } = randomizeFoodWeek(7);
+    const monday = randomizeExampleMeals();
     setMealsDraft(monday);
-    setConfirmedMealDays(extra);
+    setConfirmedMealDays([]);
     setFoodCounter(monday[monday.length - 1] ?? 250);
   }, []);
 
@@ -519,17 +519,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const confirmFoodDay = useCallback(() => {
     if (tableReveal) return;
-    if (mealsDraft.length < MIN_FOOD_MEALS) return;
+    if (mealsDraft.length < MIN_FOOD_MEALS || mealsDraft.length > MAX_MEALS) return;
 
-    const extra =
-      confirmedMealDays.length >= 6
-        ? confirmedMealDays
-        : randomizeFoodWeek(7).extra;
+    const extra = Array.from({ length: 6 }, () => randomizeExampleMeals());
     setConfirmedMealDays(extra);
     playTableReveal(() => {
       void finishFoodStep(extra);
     });
-  }, [tableReveal, mealsDraft.length, confirmedMealDays, playTableReveal, finishFoodStep]);
+  }, [tableReveal, mealsDraft.length, playTableReveal, finishFoodStep]);
 
   const renderIntroAct = () => {
     if (step === 'welcome') {
@@ -665,7 +662,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               <Text style={styles.hintCenter}>
                 {mealsDraft.length >= MIN_FOOD_MEALS
                   ? `${mealsDraft.length} приём${mealsDraft.length === 1 ? '' : mealsDraft.length < 5 ? 'а' : 'ов'} — нажмите ЗАПОЛНИЛ`
-                  : `Приём ${Math.min(mealsDraft.length + 1, MAX_MEALS)} из ${MAX_MEALS} (нужно ${MIN_FOOD_MEALS}–4)`}
+                  : `Приём ${Math.min(mealsDraft.length + 1, MAX_MEALS)} из ${MAX_MEALS}`}
               </Text>
             </Animated.View>
 
