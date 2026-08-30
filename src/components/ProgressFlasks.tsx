@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/fonts';
 import {
   FLASK_EXERCISE_WIDTH,
   FLASK_FOOD_WIDTH,
@@ -212,24 +213,42 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
   );
 }
 
+function FlaskCaption({ word }: { word: string }) {
+  const letters = Array.from(word);
+  const fontSize = Math.min(13, Math.floor(FLASK_HEIGHT / letters.length) - 1);
+
+  return (
+    <View style={styles.caption} pointerEvents="none">
+      {letters.map((ch, i) => (
+        <Text key={`${ch}-${i}`} style={[styles.captionLetter, { fontSize, lineHeight: fontSize + 1 }]}>
+          {ch}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 interface ExerciseFlasksProps {
   fills: [FlaskFill, FlaskFill, FlaskFill];
 }
 
 export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
   return (
-    <View style={styles.exerciseFlask}>
-      <SideNotch side="left" markRatio={EXERCISE_BAND_LOW} hasBaseline />
-      <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline />
-      <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
-      <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
-      <View style={styles.body}>
-        {fills.map((fill, idx) => (
-          <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
-        ))}
-        <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
-        <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
+    <View style={styles.flaskWithCaption}>
+      <View style={styles.exerciseFlask}>
+        <SideNotch side="left" markRatio={EXERCISE_BAND_LOW} hasBaseline />
+        <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline />
+        <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
+        <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
+        <View style={styles.body}>
+          {fills.map((fill, idx) => (
+            <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
+          ))}
+          <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
+          <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
+        </View>
       </View>
+      <FlaskCaption word="ПОВТОРЫ" />
     </View>
   );
 }
@@ -243,25 +262,47 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
   const fillHeight = useFillHeight(fill.fillRatio, h);
 
   return (
-    <View style={styles.foodWrap}>
-      <SideNotch side="left" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
-      <SideNotch side="right" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
-      <View
-        style={styles.foodTube}
-        onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
-      >
-        <PulseLiquid
-          kind="food"
-          fillRatio={fill.fillRatio}
-          pulseRatio={fill.pulseRatio}
-          height={fillHeight}
-        />
+    <View style={styles.flaskWithCaption}>
+      <FlaskCaption word="ГРАММЫ" />
+      <View style={styles.foodWrap}>
+        <SideNotch side="left" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
+        <SideNotch side="right" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
+        <View
+          style={styles.foodTube}
+          onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
+        >
+          <PulseLiquid
+            kind="food"
+            fillRatio={fill.fillRatio}
+            pulseRatio={fill.pulseRatio}
+            height={fillHeight}
+          />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flaskWithCaption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexGrow: 0,
+    flexShrink: 0,
+    gap: 4,
+  },
+  caption: {
+    height: FLASK_HEIGHT,
+    width: 12,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  captionLetter: {
+    fontFamily: fonts.ui,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
   exerciseFlask: {
     width: FLASK_EXERCISE_WIDTH + TICK_GUTTER * 2,
     height: FLASK_HEIGHT,
