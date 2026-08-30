@@ -22,6 +22,8 @@ export const colors = {
   textMuted: '#8888a0',
   compareGood: '#66bb6a',
   compareBad: '#ef5350',
+  /** Нейтральная заливка колб (повторения и граммы) */
+  flaskLiquid: '#8a8aa8',
   border: '#2a2a3a',
   borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
   borderGlowFood: 'rgba(0, 212, 255, 0.4)',

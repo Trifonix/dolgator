@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dolgator",
     "slug": "dolgator",
-    "version": "0.1.13",
+    "version": "0.1.14",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -18,7 +18,7 @@
         "backgroundColor": "#0a0a12"
       },
       "package": "com.dolgator.app",
-      "versionCode": 13
+      "versionCode": 14
     },
     "web": {
       "favicon": "./assets/favicon.png"

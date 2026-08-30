@@ -6,7 +6,7 @@ import {
   FLASK_FOOD_WIDTH,
   FLASK_HEIGHT,
 } from '../theme/layout';
-import type { FlaskFill, FoodFlaskFill } from '../utils/flaskMetrics';
+import { approachingWarn, type FlaskFill, type FoodFlaskFill } from '../utils/flaskMetrics';
 
 const TICK_GUTTER = 6;
 const PX = 2;
@@ -32,6 +32,41 @@ function useFillHeight(ratio: number, maxPx: number) {
   });
 }
 
+function useWarnPulse(active: boolean, intensity: number) {
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!active) {
+      opacity.stopAnimation();
+      opacity.setValue(1);
+      return;
+    }
+
+    const half = Math.round(520 - intensity * 260);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.32,
+          duration: half,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: half,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+      opacity.setValue(1);
+    };
+  }, [active, intensity, opacity]);
+
+  return opacity;
+}
+
 function SideNotch({
   side,
   markRatio,
@@ -52,7 +87,7 @@ function SideNotch({
         styles.notch,
         { bottom },
         isLeft ? { left: TICK_GUTTER - PX * 2 } : { right: TICK_GUTTER - PX * 2 },
-        { flexDirection: isLeft ? 'row' : 'row-reverse' },
+        { flexDirection: isLeft ? 'row-reverse' : 'row' },
       ]}
     >
       <View>
@@ -67,21 +102,25 @@ function SideNotch({
   );
 }
 
-function ChamberLiquid({ fill, color }: { fill: FlaskFill; color: string }) {
+function ChamberLiquid({ fill }: { fill: FlaskFill }) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
+  const warn = approachingWarn(fill);
+  const pulse = useWarnPulse(warn.active, warn.intensity);
 
   return (
     <View
       style={styles.chamber}
       onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
     >
-      <Animated.View
-        style={[
-          styles.liquid,
-          { backgroundColor: color, height: fillHeight },
-        ]}
-      />
+      <Animated.View style={[styles.liquid, { height: fillHeight }]}>
+        <Animated.View
+          style={[
+            styles.liquidFill,
+            { backgroundColor: colors.flaskLiquid, opacity: pulse },
+          ]}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -104,15 +143,7 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
         ]}
       >
         {fills.map((fill, idx) => (
-          <ChamberLiquid
-            key={idx}
-            fill={fill}
-            color={
-              fill.hasBaseline && fill.fillRatio >= fill.markRatio
-                ? colors.compareGood
-                : colors.exercise.primary
-            }
-          />
+          <ChamberLiquid key={idx} fill={fill} />
         ))}
         <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
         <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
@@ -128,7 +159,8 @@ interface FoodFlaskProps {
 export function FoodFlask({ fill }: FoodFlaskProps) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
-  const liquid = fill.overTarget ? colors.compareBad : colors.food.primary;
+  const warn = approachingWarn(fill);
+  const pulse = useWarnPulse(warn.active, warn.intensity);
 
   return (
     <View style={styles.foodWrap}>
@@ -141,9 +173,14 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
         ]}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
-        <Animated.View
-          style={[styles.liquid, { backgroundColor: liquid, height: fillHeight }]}
-        />
+        <Animated.View style={[styles.liquid, { height: fillHeight }]}>
+          <Animated.View
+            style={[
+              styles.liquidFill,
+              { backgroundColor: colors.flaskLiquid, opacity: pulse },
+            ]}
+          />
+        </Animated.View>
       </View>
     </View>
   );
@@ -216,6 +253,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: -2,
+  },
+  liquidFill: {
+    flex: 1,
   },
   notch: {
     position: 'absolute',
