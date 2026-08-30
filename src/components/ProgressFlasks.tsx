@@ -73,19 +73,20 @@ function useSmoothPulse(active: boolean, phaseDelayMs: number) {
   return mix;
 }
 
-const WAVE_BARS = 8;
-const WAVE_PERIOD_MS = 2800;
-const WAVE_OMEGA = Math.PI * 2 * 0.85;
+const WAVE_BARS = 10;
+const WAVE_PERIOD_MS = 3200;
+/** Ровно один период sin — без скачка при Animated.loop */
+const WAVE_OMEGA = Math.PI * 2;
 
 function waveBarHeight(phase: Animated.Value, barIndex: number) {
-  const steps = 16;
+  const steps = 24;
   const inputRange: number[] = [];
   const outputRange: number[] = [];
   for (let s = 0; s <= steps; s += 1) {
     const t = s / steps;
     inputRange.push(t);
-    const rad = t * WAVE_OMEGA + barIndex * 0.82;
-    outputRange.push(1.2 + 3 * (0.5 + 0.5 * Math.sin(rad)));
+    const rad = t * WAVE_OMEGA + barIndex * 0.78;
+    outputRange.push(1.4 + 2.8 * (0.5 + 0.5 * Math.sin(rad)));
   }
   return phase.interpolate({ inputRange, outputRange });
 }
@@ -133,6 +134,7 @@ function WaveSurface({
             key={i}
             style={[
               styles.waveBar,
+              i > 0 && styles.waveBarOverlap,
               { height: waveBarHeight(phase, i), backgroundColor: color },
             ]}
           />
@@ -423,10 +425,11 @@ const styles = StyleSheet.create({
   },
   waveClip: {
     position: 'absolute',
-    top: -5,
-    left: 0,
-    right: 0,
-    height: 5,
+    top: -6,
+    left: -1,
+    right: -1,
+    height: 7,
+    overflow: 'hidden',
   },
   waveRow: {
     flex: 1,
@@ -435,8 +438,10 @@ const styles = StyleSheet.create({
   },
   waveBar: {
     flex: 1,
-    borderTopLeftRadius: 1,
-    borderTopRightRadius: 1,
+    minWidth: 3,
+  },
+  waveBarOverlap: {
+    marginLeft: -2,
   },
   notch: {
     position: 'absolute',

@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
+  Easing,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { colors } from '../theme/colors';
+
+const FADE_MS = 220;
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -25,33 +28,75 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const dialogOpacity = useRef(new Animated.Value(0)).current;
+  const dialogScale = useRef(new Animated.Value(0.96)).current;
+
+  useEffect(() => {
+    if (!visible) return;
+
+    backdropOpacity.setValue(0);
+    dialogOpacity.setValue(0);
+    dialogScale.setValue(0.96);
+
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
+        toValue: 1,
+        duration: FADE_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(dialogOpacity, {
+        toValue: 1,
+        duration: FADE_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(dialogScale, {
+        toValue: 1,
+        duration: FADE_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [visible, backdropOpacity, dialogOpacity, dialogScale]);
+
+  if (!visible) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
-      animationType={Platform.OS === 'web' ? 'fade' : 'none'}
-      onRequestClose={() => {}}
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onCancel}
     >
-      <View style={styles.backdrop}>
-        <View style={[styles.box, { borderColor: palette.primary }]}>
-          <Text style={styles.message}>{message}</Text>
-          <View style={styles.actions}>
-            <Pressable
-              style={[styles.btn, styles.btnNo]}
-              onPress={onCancel}
-            >
-              <Text style={styles.btnNoText}>Нет</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.btn, { borderColor: palette.primary }]}
-              onPress={onConfirm}
-            >
-              <Text style={[styles.btnYesText, { color: palette.primary }]}>
-                Да
-              </Text>
-            </Pressable>
-          </View>
+      <View style={styles.root}>
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+          pointerEvents="none"
+        />
+        <Pressable style={styles.blocker} onPress={() => {}} accessibilityRole="none" />
+        <View style={styles.centerHost} pointerEvents="box-none">
+          <Animated.View
+            style={[
+              styles.box,
+              { borderColor: palette.primary, opacity: dialogOpacity, transform: [{ scale: dialogScale }] },
+            ]}
+          >
+            <Text style={styles.message}>{message}</Text>
+            <View style={styles.actions}>
+              <Pressable style={[styles.btn, styles.btnNo]} onPress={onCancel}>
+                <Text style={styles.btnNoText}>Нет</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.btn, { borderColor: palette.primary }]}
+                onPress={onConfirm}
+              >
+                <Text style={[styles.btnYesText, { color: palette.primary }]}>Да</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
         </View>
       </View>
     </Modal>
@@ -59,11 +104,20 @@ export function ConfirmDialog({
 }
 
 const styles = StyleSheet.create({
+  root: {
+    ...StyleSheet.absoluteFillObject,
+  },
   backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+  },
+  blocker: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  centerHost: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 24,
   },
   box: {
