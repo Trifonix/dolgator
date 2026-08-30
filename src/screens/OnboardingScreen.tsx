@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CounterControl } from '../components/CounterControl';
+import { TypewriterText } from '../components/TypewriterText';
 import {
   WeekTable,
   buildExerciseColumns,
@@ -36,6 +37,68 @@ import {
 } from '../utils/onboardingSeed';
 
 type Step = 'welcome' | 'exercise-intro' | 'exercise' | 'food-intro' | 'food';
+
+const WELCOME_TITLE = 'Добро пожаловать!';
+const WELCOME_P1 =
+  'Вы установили автономное приложение для Android-телефона по подсчёту повторений в физических упражнениях и по подсчёту грамм в порциях еды за сегодняшний день.';
+const WELCOME_P2 =
+  'Сначала нужно ввести примерные значения за прошлую неделю — они станут ориентиром для плавного прогресса: больше повторений в тренировках и чуть меньше граммов в питании каждую неделю.';
+
+function WelcomeStep({
+  onTypingComplete,
+  onStart,
+  canStart,
+  busy,
+}: {
+  onTypingComplete: () => void;
+  onStart: () => void;
+  canStart: boolean;
+  busy: boolean;
+}) {
+  const [titleDone, setTitleDone] = useState(false);
+  const [p1Done, setP1Done] = useState(false);
+
+  return (
+    <View style={styles.welcomeInner}>
+      <TypewriterText
+        text={WELCOME_TITLE}
+        style={styles.leadCenter}
+        speed={42}
+        onComplete={() => setTitleDone(true)}
+      />
+      {titleDone ? (
+        <TypewriterText
+          text={WELCOME_P1}
+          style={styles.paragraphCenter}
+          speed={22}
+          onComplete={() => setP1Done(true)}
+        />
+      ) : null}
+      {p1Done ? (
+        <>
+          <Pressable
+            style={[
+              styles.welcomePrimaryBtn,
+              (!canStart || busy) && styles.primaryBtnDisabled,
+            ]}
+            onPress={onStart}
+            disabled={!canStart || busy}
+          >
+            <Text style={styles.primaryBtnText}>
+              {canStart ? 'Начать' : '…'}
+            </Text>
+          </Pressable>
+          <TypewriterText
+            text={WELCOME_P2}
+            style={styles.paragraphCenter}
+            speed={22}
+            onComplete={onTypingComplete}
+          />
+        </>
+      ) : null}
+    </View>
+  );
+}
 
 interface OnboardingScreenProps {
   onComplete: (
@@ -82,6 +145,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [confirmedMealDays, setConfirmedMealDays] = useState<number[][]>([]);
   const [pendingConfirm, setPendingConfirm] = useState<'exercise' | 'food' | null>(null);
   const [busy, setBusy] = useState(false);
+  const [welcomeReady, setWelcomeReady] = useState(false);
 
   const prevWeekDays = useMemo(
     () => getPreviousWeekDays(getCurrentWeekDays()),
@@ -200,19 +264,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     switch (step) {
       case 'welcome':
         return (
-          <>
-            <Text style={styles.lead}>Добро пожаловать!</Text>
-            <Text style={styles.paragraph}>
-              Вы установили автономное приложение для Android-телефона по подсчёту
-              повторений в физических упражнениях и по подсчёту грамм в порциях еды
-              за сегодняшний день.
-            </Text>
-            <Text style={styles.paragraph}>
-              Сначала нужно ввести примерные значения за прошлую неделю — они станут
-              ориентиром для плавного прогресса: больше повторений в тренировках и
-              чуть меньше граммов в питании каждую неделю.
-            </Text>
-          </>
+          <WelcomeStep
+            onTypingComplete={() => setWelcomeReady(true)}
+            onStart={handlePrimary}
+            canStart={welcomeReady}
+            busy={busy}
+          />
         );
 
       case 'exercise-intro':
@@ -357,21 +414,31 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {renderBody()}
-      </ScrollView>
+      {step === 'welcome' ? (
+        <View style={styles.welcomeContainer}>
+          {renderBody()}
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {renderBody()}
+        </ScrollView>
+      )}
 
-      <Pressable
-        style={[styles.primaryBtn, busy && styles.primaryBtnDisabled]}
-        onPress={handlePrimary}
-        disabled={busy}
-      >
-        <Text style={styles.primaryBtnText}>{busy ? 'Сохранение…' : primaryLabel}</Text>
-      </Pressable>
+      {step !== 'welcome' ? (
+        <Pressable
+          style={[styles.primaryBtn, busy && styles.primaryBtnDisabled]}
+          onPress={handlePrimary}
+          disabled={busy}
+        >
+          <Text style={styles.primaryBtnText}>
+            {busy ? 'Сохранение…' : primaryLabel}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <ConfirmDialog
         visible={pendingConfirm !== null}
@@ -400,6 +467,40 @@ const styles = StyleSheet.create({
     padding: GAP,
     gap: GAP,
     paddingBottom: GAP * 2,
+  },
+  welcomeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: GAP,
+  },
+  welcomeInner: {
+    width: '100%',
+    alignItems: 'center',
+    gap: GAP * 0.75,
+  },
+  welcomePrimaryBtn: {
+    alignSelf: 'center',
+    minWidth: 160,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 10,
+    backgroundColor: colors.exercise.dim,
+    alignItems: 'center',
+    marginVertical: GAP * 0.25,
+  },
+  leadCenter: {
+    color: colors.exercise.primary,
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  paragraphCenter: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 22,
+    textAlign: 'center',
   },
   lead: {
     color: colors.exercise.primary,
