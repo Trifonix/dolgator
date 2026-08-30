@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.3',
+    date: '2026-08-30',
+    items: [
+      'Онбординг: без печатной машинки — весь текст плавно появляется и исчезает',
+      'Android: колбы и таблица без подвисаний; OK и диалог — мгновенный отклик',
+    ],
+  },
+  {
     version: '1.0.2',
     date: '2026-08-30',
     items: [
