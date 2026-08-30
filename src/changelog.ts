@@ -7,6 +7,13 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.23',
+    date: '2026-08-30',
+    items: [
+      'Центральные счётчики: −/+ к краям, фиксированный размер OK, выравнивание рядов',
+    ],
+  },
+  {
     version: '0.1.22',
     date: '2026-08-30',
     items: [

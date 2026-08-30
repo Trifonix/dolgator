@@ -14,6 +14,14 @@ export const FLASK_HEIGHT = 100;
 export const FLASK_EXERCISE_WIDTH = 38;
 export const FLASK_FOOD_WIDTH = 16;
 
+/** Счётчики в центральной колонке (эталон REF_WIDTH) */
+export const CENTER_SIDE_BTN = 40;
+export const CENTER_OK_WIDTH = 72;
+export const CENTER_OK_HEIGHT = 40;
+export const CENTER_OK_FONT_SIZE = 26;
+/** Зазор между − / OK / + */
+export const CENTER_CTRL_GAP = 8;
+
 /** Мин. отступ снизу под 3-кнопочную навигацию Android (dp) */
 export const ANDROID_NAV_BAR_MIN = 40;
 

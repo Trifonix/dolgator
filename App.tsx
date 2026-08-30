@@ -269,15 +269,16 @@ const styles = StyleSheet.create({
   centerBand: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
     marginVertical: GAP,
   },
   centerColumn: {
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
+    alignItems: 'stretch',
     gap: 4,
+    paddingHorizontal: 4,
   },
   versionRow: {
     flexDirection: 'row',
