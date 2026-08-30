@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
   },
   cellText: {
-    fontSize: 9,
+    fontSize: 10,
     fontVariant: ['tabular-nums'],
   },
   exerciseMiniRow: {
@@ -669,18 +669,18 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     textAlign: 'center',
-    fontSize: 8,
+    fontSize: 9,
     fontVariant: ['tabular-nums'],
   },
   foodCellText: {
-    fontSize: 10,
+    fontSize: 11,
   },
   sumRow: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
   sumText: {
-    fontSize: 9,
+    fontSize: 10,
     fontVariant: ['tabular-nums'],
   },
   weekCompareStack: {
