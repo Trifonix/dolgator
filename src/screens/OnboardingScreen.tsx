@@ -3,6 +3,7 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -368,6 +369,23 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     if (introTransitioning.current) return;
     introTransitioning.current = true;
 
+    const unlock = () => {
+      introTransitioning.current = false;
+    };
+
+    const applyStep = () => {
+      setStep(next);
+      introSlide.setValue(0);
+      introOpacity.setValue(1);
+      unlock();
+    };
+
+    // На Android/iOS fade через native driver часто «застревает» на opacity 0 — чёрный экран.
+    if (Platform.OS !== 'web' || options?.skipFadeOut) {
+      applyStep();
+      return;
+    }
+
     const fadeIn = () => {
       setStep(next);
       introSlide.setValue(22);
@@ -385,15 +403,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        introTransitioning.current = false;
-      });
+      ]).start(unlock);
     };
-
-    if (options?.skipFadeOut) {
-      fadeIn();
-      return;
-    }
 
     Animated.parallel([
       Animated.timing(introOpacity, {

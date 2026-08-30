@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TextStyle, View } from 'react-native';
+import { Platform, StyleSheet, Text, TextStyle, View } from 'react-native';
 import { colors } from '../theme/colors';
 
 interface TypewriterTextProps {
@@ -41,6 +41,17 @@ export function TypewriterText({
 
     if (text.length === 0) {
       setLength(0);
+      setDone(true);
+      if (completedForText.current !== text) {
+        completedForText.current = text;
+        onCompleteRef.current?.();
+      }
+      return;
+    }
+
+    // На телефоне typewriter грузит JS-поток и тормозит онбординг.
+    if (Platform.OS !== 'web') {
+      setLength(text.length);
       setDone(true);
       if (completedForText.current !== text) {
         completedForText.current = text;
