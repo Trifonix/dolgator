@@ -21,6 +21,7 @@ import {
 import { useTableGestures } from './src/hooks/useTableGestures';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { ChangelogScreen } from './src/screens/ChangelogScreen';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, ANDROID_NAV_BAR_MIN, GAP } from './src/theme/layout';
 import { APP_NAME, APP_VERSION, DEVELOPER_NAME, DEVELOPER_URL, formatLastCommit, LAST_COMMIT_AT } from './src/version';
@@ -122,6 +123,15 @@ function AppContent() {
     );
   }
 
+  if (tracker.needsOnboarding) {
+    return (
+      <MobileScreen>
+        <StatusBar style="light" />
+        <OnboardingScreen onComplete={tracker.completeOnboarding} />
+      </MobileScreen>
+    );
+  }
+
   if (showChangelog) {
     return (
       <MobileScreen>
@@ -133,6 +143,8 @@ function AppContent() {
 
   const exerciseColumns = buildExerciseColumns(tracker.weekExerciseData);
   const foodColumns = buildFoodColumns(tracker.weekFoodData);
+  const ghostExerciseColumns = buildExerciseColumns(tracker.ghostExerciseData);
+  const ghostFoodColumns = buildFoodColumns(tracker.ghostFoodData);
 
   return (
     <MobileScreen>
@@ -151,6 +163,7 @@ function AppContent() {
               weekDays={tracker.weekDays}
               todayKey={tracker.todayKey}
               columns={exerciseColumns}
+              ghostColumns={ghostExerciseColumns}
               maxRows={MAX_SETS}
               weekCompare={{
                 current: tracker.weekExerciseTotal,
@@ -223,6 +236,7 @@ function AppContent() {
               weekDays={tracker.weekDays}
               todayKey={tracker.todayKey}
               columns={foodColumns}
+              ghostColumns={ghostFoodColumns}
               maxRows={MAX_MEALS}
               weekCompare={{
                 current: tracker.weekFoodTotal,

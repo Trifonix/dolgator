@@ -22,6 +22,8 @@ export const colors = {
   textMuted: '#8888a0',
   compareGood: '#66bb6a',
   compareBad: '#ef5350',
+  /** Призрак прошлой недели в таблице текущей */
+  ghostText: 'rgba(136, 136, 160, 0.42)',
   /** Почти белая заливка колб — контраст с тёмным фоном */
   flaskLiquid: '#f0f0f6',
   border: '#2a2a3a',

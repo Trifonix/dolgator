@@ -25,6 +25,14 @@ import {
   prevWeekFoodDailyAverage,
   todayExerciseSums,
 } from '../utils/flaskMetrics';
+import { needsOnboarding } from '../utils/onboarding';
+import { buildPreviousWeekSeed } from '../utils/onboardingSeed';
+import {
+  currentFoodDailyTarget,
+  exerciseTargetAvgPerSet,
+  foodWeekTarget,
+  prevWeekTotals,
+} from '../utils/weeklyTargets';
 
 function syncExerciseIndex(state: AppState, todayKey: string): AppState {
   const exercises = getDayExercises(getDayRecord(state, todayKey));
@@ -243,6 +251,37 @@ export function useTrackerData() {
     setFoodUndoUntil(0);
   }, [state, todayKey, persist]);
 
+  const completeOnboarding = useCallback(
+    async (templateExercise: ExerciseColumns, templateMeals: number[]) => {
+      if (!state) return;
+
+      const seed = buildPreviousWeekSeed(prevWeekKeys, templateExercise, templateMeals);
+      const lastRep =
+        templateExercise[2][templateExercise[2].length - 1]
+        ?? templateExercise[1][templateExercise[1].length - 1]
+        ?? templateExercise[0][templateExercise[0].length - 1]
+        ?? DEFAULT_STATE.lastExerciseRep;
+      const lastMeal =
+        templateMeals[templateMeals.length - 1] ?? DEFAULT_STATE.lastMealGrams;
+
+      const next = syncExerciseIndex(
+        {
+          ...state,
+          onboardingCompleted: true,
+          days: { ...state.days, ...seed },
+          lastExerciseRep: lastRep,
+          lastMealGrams: lastMeal,
+        },
+        todayKey,
+      );
+
+      await persist(next);
+      setExerciseCounter(lastRep);
+      setFoodCounter(lastMeal);
+    },
+    [state, prevWeekKeys, todayKey, persist],
+  );
+
   const currentExerciseLabel = state
     ? EXERCISE_LABELS[state.currentExerciseIndex]
     : EXERCISE_LABELS[0];
@@ -276,6 +315,24 @@ export function useTrackerData() {
     return { meals: record.meals, sum: sumMealsDay(record.meals) };
   });
 
+  const ghostExerciseData = weekKeys.map((_, colIdx) => {
+    if (!state?.onboardingCompleted) {
+      return { exercises: EMPTY_EXERCISES, sum: 0 };
+    }
+    const key = prevWeekKeys[colIdx];
+    const exercises = getDayExercises(getDayRecord(state, key));
+    return { exercises, sum: sumExerciseDay(exercises) };
+  });
+
+  const ghostFoodData = weekKeys.map((_, colIdx) => {
+    if (!state?.onboardingCompleted) {
+      return { meals: [] as number[], sum: 0 };
+    }
+    const key = prevWeekKeys[colIdx];
+    const record = getDayRecord(state, key);
+    return { meals: record.meals, sum: sumMealsDay(record.meals) };
+  });
+
   const weekExerciseTotal = state
     ? sumExerciseWeek(state.days, weekKeys)
     : 0;
@@ -296,6 +353,11 @@ export function useTrackerData() {
   const prevAvgs = state
     ? prevWeekExerciseAvgPerSet(state.days, prevWeekKeys)
     : [null, null, null] as const;
+  const prevTotals = state ? prevWeekTotals(state, prevWeekKeys) : { food: 0, exercise: 0 };
+  const targetAvgs = state
+    ? exerciseTargetAvgPerSet(state.days, prevWeekKeys, prevTotals.exercise)
+    : [null, null, null] as const;
+  const exerciseBaselines = state?.onboardingCompleted ? targetAvgs : prevAvgs;
   const weekAvgsExclToday = state
     ? exerciseAvgPerSet(
         state.days,
@@ -309,17 +371,17 @@ export function useTrackerData() {
   ] = [
     exerciseFlaskFill(
       todaySums[0],
-      prevAvgs[0],
+      exerciseBaselines[0],
       weekAvgsExclToday[0] ?? DEFAULT_STATE.lastExerciseRep,
     ),
     exerciseFlaskFill(
       todaySums[1],
-      prevAvgs[1],
+      exerciseBaselines[1],
       weekAvgsExclToday[1] ?? DEFAULT_STATE.lastExerciseRep,
     ),
     exerciseFlaskFill(
       todaySums[2],
-      prevAvgs[2],
+      exerciseBaselines[2],
       weekAvgsExclToday[2] ?? DEFAULT_STATE.lastExerciseRep,
     ),
   ];
@@ -336,14 +398,25 @@ export function useTrackerData() {
   const fallbackFoodDay =
     weekFoodExclToday
     ?? DEFAULT_STATE.lastMealGrams * MAX_MEALS;
+  const foodBaseline = state?.onboardingCompleted
+    ? currentFoodDailyTarget(state, prevWeekKeys)
+    : state
+      ? prevWeekFoodDailyAverage(state.days, prevWeekKeys)
+      : null;
   const foodFlask = foodFlaskFill(
     todayFoodSum,
-    state ? prevWeekFoodDailyAverage(state.days, prevWeekKeys) : null,
+    foodBaseline,
     fallbackFoodDay,
   );
 
+  const foodWeekTargetValue = state?.onboardingCompleted
+    ? foodWeekTarget(prevTotals.food)
+    : null;
+
   return {
     ready: state !== null,
+    needsOnboarding: state ? needsOnboarding(state) : false,
+    completeOnboarding,
     weekDays,
     todayKey,
     exerciseCounter,
@@ -367,6 +440,9 @@ export function useTrackerData() {
     foodUndoArmed,
     weekExerciseData,
     weekFoodData,
+    ghostExerciseData,
+    ghostFoodData,
+    foodWeekTargetValue,
     weekExerciseTotal,
     prevWeekExerciseTotal,
     weekFoodTotal,

@@ -20,6 +20,7 @@ interface WeekTableProps {
   weekDays: Date[];
   todayKey: string;
   columns: { items: TableCell[][]; sums: number[] };
+  ghostColumns?: { items: TableCell[][]; sums: number[] };
   maxRows: number;
   weekCompare?: { current: number; previous: number };
   onTap?: () => void;
@@ -114,6 +115,7 @@ export function WeekTable({
   weekDays,
   todayKey,
   columns,
+  ghostColumns,
   maxRows,
   weekCompare,
   onTap,
@@ -190,6 +192,7 @@ export function WeekTable({
                 const isToday = key === todayKey;
                 const isWeekend = isWeekendColumn(colIdx);
                 const cell = columns.items[colIdx]?.[rowIdx];
+                const ghostCell = ghostColumns?.items[colIdx]?.[rowIdx];
 
                 return (
                   <View
@@ -204,43 +207,65 @@ export function WeekTable({
                       },
                     ]}
                   >
-                    {variant === 'exercise' && isExerciseCell(cell) ? (
+                    {variant === 'exercise' && (isExerciseCell(cell) || isExerciseCell(ghostCell)) ? (
                       <View style={styles.exerciseMiniRow}>
-                        {cell.map((value, miniIdx) => (
+                        {([0, 1, 2] as const).map((miniIdx) => {
+                          const value = isExerciseCell(cell) ? cell[miniIdx] : null;
+                          const ghostValue = isExerciseCell(ghostCell) ? ghostCell[miniIdx] : null;
+                          const showActual = value != null;
+                          const showGhost = !showActual && ghostValue != null;
+                          return (
+                            <Text
+                              key={miniIdx}
+                              style={[
+                                styles.exerciseMiniCell,
+                                {
+                                  color: showActual
+                                    ? palette.primary
+                                    : showGhost
+                                      ? colors.ghostText
+                                      : colors.textMuted,
+                                },
+                              ]}
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.6}
+                            >
+                              {showActual
+                                ? String(value)
+                                : showGhost
+                                  ? String(ghostValue)
+                                  : ''}
+                            </Text>
+                          );
+                        })}
+                      </View>
+                    ) : (
+                      (() => {
+                        const hasActual = cell != null && cell !== '';
+                        const ghostVal = ghostCell != null && ghostCell !== '' ? ghostCell : null;
+                        const display = hasActual ? cell : ghostVal;
+                        return (
                           <Text
-                            key={miniIdx}
                             style={[
-                              styles.exerciseMiniCell,
+                              styles.cellText,
+                              variant === 'food' && styles.foodCellText,
                               {
-                                color: value != null ? palette.primary : colors.textMuted,
+                                color: hasActual
+                                  ? palette.primary
+                                  : ghostVal != null
+                                    ? colors.ghostText
+                                    : colors.textMuted,
                               },
                             ]}
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.6}
+                            minimumFontScale={0.7}
                           >
-                            {value != null ? String(value) : ''}
+                            {display != null ? String(display) : ''}
                           </Text>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.cellText,
-                          variant === 'food' && styles.foodCellText,
-                          {
-                            color:
-                              cell != null && cell !== ''
-                                ? palette.primary
-                                : colors.textMuted,
-                          },
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.7}
-                      >
-                        {cell != null ? String(cell) : ''}
-                      </Text>
+                        );
+                      })()
                     )}
                   </View>
                 );
@@ -302,6 +327,8 @@ export function WeekTable({
               const isFirstCol = colIdx === 0;
               const isToday = key === todayKey;
               const isWeekend = isWeekendColumn(colIdx);
+              const ghostSum = ghostColumns?.sums[colIdx] ?? 0;
+              const hasActual = sum > 0;
 
               return (
                 <View
@@ -317,11 +344,17 @@ export function WeekTable({
                   <Text
                     style={[
                       styles.sumText,
-                      { color: sum > 0 ? palette.primary : colors.textMuted },
+                      {
+                        color: hasActual
+                          ? palette.primary
+                          : ghostSum > 0
+                            ? colors.ghostText
+                            : colors.textMuted,
+                      },
                     ]}
                     numberOfLines={1}
                   >
-                    {sum > 0 ? sum : ' '}
+                    {hasActual ? sum : ghostSum > 0 ? ghostSum : ' '}
                   </Text>
                 </View>
               );

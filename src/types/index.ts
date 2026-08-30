@@ -21,6 +21,8 @@ export interface AppState {
   lastMealGrams: number;
   /** Текущее упражнение: 0=ноги, 1=грудь, 2=спина */
   currentExerciseIndex: 0 | 1 | 2;
+  /** Стартовый мастер пройден */
+  onboardingCompleted?: boolean;
 }
 
 export const DEFAULT_STATE: AppState = {
@@ -28,6 +30,7 @@ export const DEFAULT_STATE: AppState = {
   lastExerciseRep: 5,
   lastMealGrams: 250,
   currentExerciseIndex: 0,
+  onboardingCompleted: false,
 };
 
 export const EMPTY_EXERCISES: ExerciseColumns = [[], [], []];
