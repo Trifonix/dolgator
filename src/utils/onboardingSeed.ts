@@ -87,16 +87,43 @@ export function randomizeFoodWeek(dayCount = 7): { monday: number[]; extra: numb
   return { monday, extra };
 }
 
+/** Ср и пт: те же подходы, что в пн, каждый ±1 повтор */
+export function planExerciseExtraDaySets(mondayColumn: number[]): {
+  wed: number[];
+  fri: number[];
+} {
+  return {
+    wed: mondayColumn.map(varyRep),
+    fri: mondayColumn.map(varyRep),
+  };
+}
+
+/** Добавить один подход в ср (0) или пт (1) */
+export function appendExerciseSetToExtraDay(
+  extraDays: ExerciseColumns[],
+  dayIdx: 0 | 1,
+  exerciseIdx: 0 | 1 | 2,
+  value: number,
+): ExerciseColumns[] {
+  const next: ExerciseColumns[] = [
+    extraDays[0] ? cloneExerciseColumns(extraDays[0]) : emptyExerciseColumns(),
+    extraDays[1] ? cloneExerciseColumns(extraDays[1]) : emptyExerciseColumns(),
+  ];
+  next[dayIdx][exerciseIdx] = [...next[dayIdx][exerciseIdx], value];
+  return next;
+}
+
 /** Пн — как ввели, ср и пт — та же колонка упражнения ±1 повтор */
 export function spreadExerciseColumnToExtraDays(
   extraDays: ExerciseColumns[],
   exerciseIdx: 0 | 1 | 2,
   mondayColumn: number[],
 ): ExerciseColumns[] {
+  const planned = planExerciseExtraDaySets(mondayColumn);
   const wed = extraDays[0] ? cloneExerciseColumns(extraDays[0]) : emptyExerciseColumns();
   const fri = extraDays[1] ? cloneExerciseColumns(extraDays[1]) : emptyExerciseColumns();
-  wed[exerciseIdx] = mondayColumn.map(varyRep);
-  fri[exerciseIdx] = mondayColumn.map(varyRep);
+  wed[exerciseIdx] = planned.wed;
+  fri[exerciseIdx] = planned.fri;
   return [wed, fri];
 }
 

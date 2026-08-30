@@ -32,10 +32,11 @@ import {
   DEFAULT_ONBOARDING_EXERCISE,
   DEFAULT_ONBOARDING_MEALS,
   EXAMPLE_EXERCISE_BASE,
+  appendExerciseSetToExtraDay,
   buildOnboardingPreviewWeek,
+  planExerciseExtraDaySets,
   randomizeExampleMeals,
   randomizeExampleSets,
-  spreadExerciseColumnToExtraDays,
 } from '../utils/onboardingSeed';
 
 type Step = 'welcome' | 'exercise-intro' | 'exercise' | 'food-intro' | 'food';
@@ -69,6 +70,7 @@ const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
 const MIN_FOOD_MEALS = 1;
 const INTRO_FADE_MS = 320;
+const SPREAD_STEP_MS = 260;
 
 function IntroActStep({
   title,
@@ -328,6 +330,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [busy, setBusy] = useState(false);
   const [introReady, setIntroReady] = useState(false);
   const [tableReveal, setTableReveal] = useState(false);
+  const [spreadBusy, setSpreadBusy] = useState(false);
   const introOpacity = useRef(new Animated.Value(1)).current;
   const introSlide = useRef(new Animated.Value(0)).current;
   const introTransitioning = useRef(false);
@@ -336,6 +339,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const tableScale = useRef(new Animated.Value(1)).current;
   const tableOpacity = useRef(new Animated.Value(1)).current;
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spreadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const workAreaH = useRef(0);
   const tableLayout = useRef({ y: 0, height: 100 });
 
@@ -348,6 +352,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   useEffect(() => {
     return () => {
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+      if (spreadTimerRef.current) clearTimeout(spreadTimerRef.current);
     };
   }, []);
 
@@ -544,39 +549,53 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [foodCounter, mealsDraft.length]);
 
   const confirmCurrentExercise = useCallback(() => {
-    if (tableReveal) return;
+    if (tableReveal || spreadBusy) return;
     if (exerciseDraft[exerciseIndex].length < MAX_SETS) return;
 
-    const extra = spreadExerciseColumnToExtraDays(
-      confirmedExerciseDays,
-      exerciseIndex,
-      exerciseDraft[exerciseIndex],
-    );
-    setConfirmedExerciseDays(extra);
-
-    if (exerciseIndex < 2) {
-      const nextIdx = (exerciseIndex + 1) as 0 | 1 | 2;
-      setExerciseIndex(nextIdx);
-      const example = DEFAULT_ONBOARDING_EXERCISE[nextIdx];
-      setExerciseCounter(example[0] ?? 5);
-      pulseTableUpdate();
-      return;
+    const monday = exerciseDraft[exerciseIndex];
+    const planned = planExerciseExtraDaySets(monday);
+    const idx = exerciseIndex;
+    const steps: { day: 0 | 1; value: number }[] = [];
+    for (let setIdx = 0; setIdx < monday.length; setIdx++) {
+      steps.push({ day: 0, value: planned.wed[setIdx] });
+      steps.push({ day: 1, value: planned.fri[setIdx] });
     }
 
-    pulseTableUpdate();
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        playTableReveal(() => goToStep('food-intro', { skipFadeOut: true }));
-      }, 560);
-    });
+    setSpreadBusy(true);
+
+    let stepI = 0;
+    const runStep = () => {
+      if (stepI >= steps.length) {
+        setSpreadBusy(false);
+        if (idx < 2) {
+          const nextIdx = (idx + 1) as 0 | 1 | 2;
+          setExerciseIndex(nextIdx);
+          const example = DEFAULT_ONBOARDING_EXERCISE[nextIdx];
+          setExerciseCounter(example[0] ?? 5);
+          return;
+        }
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            playTableReveal(() => goToStep('food-intro', { skipFadeOut: true }));
+          }, 420);
+        });
+        return;
+      }
+      const stepItem = steps[stepI];
+      stepI += 1;
+      setConfirmedExerciseDays((prev) =>
+        appendExerciseSetToExtraDay(prev, stepItem.day, idx, stepItem.value),
+      );
+      spreadTimerRef.current = setTimeout(runStep, SPREAD_STEP_MS);
+    };
+    runStep();
   }, [
     exerciseDraft,
     exerciseIndex,
-    confirmedExerciseDays,
     tableReveal,
+    spreadBusy,
     playTableReveal,
     goToStep,
-    pulseTableUpdate,
   ]);
 
   const finishFoodStep = useCallback(async (extraMeals?: number[][]) => {
@@ -715,24 +734,24 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onValuePress={() => setPendingConfirm('exercise')}
                 onUndoLast={() => {}}
                 onArmUndo={() => {}}
-                okMode={currentExerciseReady || tableReveal ? 'disabled' : 'active'}
+                okMode={currentExerciseReady || tableReveal || spreadBusy ? 'disabled' : 'active'}
                 compact
               />
               <Pressable
                 style={[
                   styles.introPrimaryBtn,
                   { backgroundColor: FILL_BTN_COLORS[exerciseIndex] },
-                  (!currentExerciseReady || tableReveal) && styles.primaryBtnDisabled,
+                  (!currentExerciseReady || tableReveal || spreadBusy) && styles.primaryBtnDisabled,
                 ]}
                 onPress={confirmCurrentExercise}
-                disabled={!currentExerciseReady || busy || tableReveal}
+                disabled={!currentExerciseReady || busy || tableReveal || spreadBusy}
               >
                 <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
               </Pressable>
               <Pressable
                 style={styles.secondaryBtn}
                 onPress={applyExerciseExample}
-                disabled={tableReveal}
+                disabled={tableReveal || spreadBusy}
               >
                 <Text style={styles.secondaryBtnText}>
                   Использовать{' '}

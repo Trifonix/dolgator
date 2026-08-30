@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -29,6 +32,54 @@ interface WeekTableProps {
 
 function isExerciseCell(cell: TableCell | undefined): cell is ExerciseCell {
   return Array.isArray(cell);
+}
+
+function FadeInMiniValue({
+  value,
+  color,
+  style,
+}: {
+  value: number | null | undefined;
+  color: string;
+  style: TextStyle;
+}) {
+  const hasValue = value != null;
+  const opacity = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
+  const seen = useRef(value);
+
+  useEffect(() => {
+    const had = seen.current != null;
+    const has = value != null;
+    if (!had && has) {
+      opacity.setValue(0);
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else if (had && !has) {
+      opacity.setValue(0);
+    } else if (has) {
+      opacity.setValue(1);
+    }
+    seen.current = value;
+  }, [opacity, value]);
+
+  if (value == null) {
+    return <Text style={style} />;
+  }
+
+  return (
+    <Animated.Text
+      style={[style, { color, opacity }]}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.6}
+    >
+      {String(value)}
+    </Animated.Text>
+  );
 }
 
 function dateKey(day: Date): string {
@@ -215,28 +266,18 @@ export function WeekTable({
                           const showActual = value != null;
                           const showGhost = !showActual && ghostValue != null;
                           return (
-                            <Text
+                            <FadeInMiniValue
                               key={miniIdx}
-                              style={[
-                                styles.exerciseMiniCell,
-                                {
-                                  color: showActual
-                                    ? palette.primary
-                                    : showGhost
-                                      ? colors.ghostText
-                                      : colors.textMuted,
-                                },
-                              ]}
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                              minimumFontScale={0.6}
-                            >
-                              {showActual
-                                ? String(value)
-                                : showGhost
-                                  ? String(ghostValue)
-                                  : ''}
-                            </Text>
+                              value={showActual ? value : showGhost ? ghostValue : null}
+                              color={
+                                showActual
+                                  ? palette.primary
+                                  : showGhost
+                                    ? colors.ghostText
+                                    : colors.textMuted
+                              }
+                              style={styles.exerciseMiniCell}
+                            />
                           );
                         })}
                       </View>
