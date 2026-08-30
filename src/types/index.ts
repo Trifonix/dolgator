@@ -1,7 +1,7 @@
-/** Три упражнения × до 5 подходов каждое: [ноги[], грудь[], спина[]] */
+/** Три упражнения × до 5 подходов каждое: [ноги[], грудные[], спина[]] */
 export type ExerciseColumns = [number[], number[], number[]];
 
-/** Строка таблицы: [ноги, грудь, спина] для одного подхода */
+/** Строка таблицы: [ноги, грудные, спина] для одного подхода */
 export type ExerciseCell = [number | null, number | null, number | null];
 
 /** @deprecated Старый формат — мигрируется в exercises */
@@ -19,7 +19,7 @@ export interface AppState {
   days: Record<string, DayRecord>;
   lastExerciseRep: number;
   lastMealGrams: number;
-  /** Текущее упражнение: 0=ноги, 1=грудь, 2=спина */
+  /** Текущее упражнение: 0=ноги, 1=грудные, 2=спина */
   currentExerciseIndex: 0 | 1 | 2;
   /** Стартовый мастер пройден */
   onboardingCompleted?: boolean;

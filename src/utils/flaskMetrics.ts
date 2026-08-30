@@ -35,7 +35,7 @@ function asState(days: Record<string, DayRecord>): AppState {
   return { days } as AppState;
 }
 
-/** Среднее повторений в подходе за набор дней (ноги / грудь / спина) */
+/** Среднее повторений в подходе за набор дней (ноги / грудные / спина) */
 export function exerciseAvgPerSet(
   days: Record<string, DayRecord>,
   dateKeys: string[],
@@ -52,7 +52,7 @@ export function exerciseAvgPerSet(
   return [mean(buckets[0]), mean(buckets[1]), mean(buckets[2])];
 }
 
-/** Среднее повторений в подходе за прошлую неделю (ноги / грудь / спина) */
+/** Среднее повторений в подходе за прошлую неделю (ноги / грудные / спина) */
 export function prevWeekExerciseAvgPerSet(
   days: Record<string, DayRecord>,
   prevWeekKeys: string[],

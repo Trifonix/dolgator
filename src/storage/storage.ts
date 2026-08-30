@@ -65,7 +65,7 @@ export function inferCurrentExerciseIndex(exercises: ExerciseColumns): 0 | 1 | 2
   return 2;
 }
 
-/** Строки таблицы: подход × [ноги, грудь, спина] */
+/** Строки таблицы: подход × [ноги, грудные, спина] */
 export function exercisesToTableRows(exercises: ExerciseColumns): ExerciseCell[] {
   return Array.from({ length: MAX_SETS }, (_, rowIdx) => [
     exercises[0][rowIdx] ?? null,
