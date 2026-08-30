@@ -53,6 +53,7 @@ const EXERCISE_INTRO_P2 =
   'Можно заполнить вручную через − / число / + и OK, либо нажать «Использовать пример» и принять готовый вариант.';
 
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro'];
+const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise'];
 const INTRO_FADE_MS = 280;
 
 function IntroActStep({
@@ -223,6 +224,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const introTransitioning = useRef(false);
 
   const isIntroAct = INTRO_ACTS.includes(step);
+  const isCenteredAct = CENTERED_ACTS.includes(step);
 
   useEffect(() => {
     if (INTRO_ACTS.includes(step)) {
@@ -411,13 +413,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'exercise':
         return (
-          <>
-            <Text style={styles.lead}>Прошлая неделя — повторения</Text>
-            <Text style={styles.hint}>
+          <View style={styles.workInner}>
+            <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
+            <Text style={styles.hintCenter}>
               Сейчас: {EXERCISE_LABELS[exerciseIndex]} · подход{' '}
               {Math.min(exerciseDraft[exerciseIndex].length + 1, MAX_SETS)} из {MAX_SETS}
             </Text>
-            <View style={styles.tableWrap}>
+            <View style={styles.tableWrapCompact}>
               <WeekTable
                 variant="exercise"
                 weekDays={prevWeekDays}
@@ -437,10 +439,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               okMode={exerciseFull ? 'disabled' : 'active'}
               compact
             />
+            <Pressable
+              style={[styles.introPrimaryBtn, busy && styles.primaryBtnDisabled]}
+              onPress={finishExerciseStep}
+              disabled={busy}
+            >
+              <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
+            </Pressable>
             <Pressable style={styles.secondaryBtn} onPress={applyExerciseExample}>
               <Text style={styles.secondaryBtnText}>Использовать пример</Text>
             </Pressable>
-          </>
+          </View>
         );
 
       case 'food-intro':
@@ -496,7 +505,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   const primaryLabel = (() => {
-    if (step === 'exercise') return exerciseFull ? 'Далее — питание' : 'Принять пример и далее';
     if (step === 'food-intro') return 'К таблице питания';
     if (step === 'food') return mealsDone ? 'Завершить настройку' : 'Принять пример и завершить';
     return 'OK';
@@ -504,9 +512,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const handlePrimary = () => {
     switch (step) {
-      case 'exercise':
-        finishExerciseStep();
-        break;
       case 'food-intro':
         setStep('food');
         break;
@@ -526,18 +531,22 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {isIntroAct ? (
+      {isCenteredAct ? (
         <View style={styles.introContainer}>
-          <Animated.View
-            key={step}
-            style={{
-              width: '100%',
-              opacity: introOpacity,
-              transform: [{ translateY: introSlide }],
-            }}
-          >
-            {renderBody()}
-          </Animated.View>
+          {isIntroAct ? (
+            <Animated.View
+              key={step}
+              style={{
+                width: '100%',
+                opacity: introOpacity,
+                transform: [{ translateY: introSlide }],
+              }}
+            >
+              {renderBody()}
+            </Animated.View>
+          ) : (
+            renderBody()
+          )}
         </View>
       ) : (
         <ScrollView
@@ -549,7 +558,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </ScrollView>
       )}
 
-      {!isIntroAct ? (
+      {!isCenteredAct ? (
         <Pressable
           style={[styles.primaryBtn, busy && styles.primaryBtnDisabled]}
           onPress={handlePrimary}
@@ -599,6 +608,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: GAP * 0.75,
+  },
+  workInner: {
+    width: '100%',
+    alignItems: 'center',
+    gap: GAP * 0.5,
   },
   introPrimaryBtn: {
     alignSelf: 'center',
@@ -650,8 +664,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  hintCenter: {
+    color: colors.food.primary,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   tableWrap: {
     minHeight: 120,
+  },
+  tableWrapCompact: {
+    width: '100%',
+    minHeight: 96,
   },
   secondaryBtn: {
     alignSelf: 'center',
