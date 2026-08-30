@@ -1,7 +1,0 @@
-.work/
-frames/
-composed/
-__pycache__/
-*.pyc
-.playwright-browsers/
-*.mp4

@@ -21,4 +21,7 @@ web-build/
 .idea/
 .vscode/
 Thumbs.db
+
+# Локальный генератор демо-роликов (не публикуем)
 make-demo-video/
+make-demo-video/**
