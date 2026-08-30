@@ -223,12 +223,7 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
       <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline />
       <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
       <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
-      <View
-        style={[
-          styles.body,
-          { borderColor: colors.exercise.primary, shadowColor: colors.exercise.primary },
-        ]}
-      >
+      <View style={styles.body}>
         {fills.map((fill, idx) => (
           <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
         ))}
@@ -252,10 +247,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
       <SideNotch side="left" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
       <SideNotch side="right" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
       <View
-        style={[
-          styles.foodTube,
-          { borderColor: colors.food.primary, shadowColor: colors.food.primary },
-        ]}
+        style={styles.foodTube}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
         <PulseLiquid
@@ -283,16 +275,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     borderWidth: 2,
+    borderColor: colors.flaskGlass,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.flaskGlassInner,
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: colors.flaskGlassGlow,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 6,
+    shadowOpacity: 1,
+    shadowRadius: 5,
   },
   chamber: {
     flex: 1,
@@ -306,7 +300,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 2,
     marginLeft: -1,
-    backgroundColor: colors.exercise.primary,
+    backgroundColor: colors.flaskGlassPartition,
     zIndex: 2,
   },
   foodWrap: {
@@ -320,16 +314,18 @@ const styles = StyleSheet.create({
     marginHorizontal: TICK_GUTTER,
     height: FLASK_HEIGHT,
     borderWidth: 2,
+    borderColor: colors.flaskGlass,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
     borderBottomLeftRadius: 9,
     borderBottomRightRadius: 9,
-    backgroundColor: colors.bgCard,
+    backgroundColor: colors.flaskGlassInner,
     overflow: 'hidden',
     position: 'relative',
+    shadowColor: colors.flaskGlassGlow,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 6,
+    shadowOpacity: 1,
+    shadowRadius: 5,
   },
   liquid: {
     position: 'absolute',

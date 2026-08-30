@@ -36,6 +36,11 @@ export const colors = {
   ghostText: 'rgba(136, 136, 160, 0.42)',
   /** Базовая заливка колб — «значения», слоновая кость */
   flaskLiquid: '#efe6c8',
+  /** Стекло пробирок */
+  flaskGlass: '#b7c0cc',
+  flaskGlassInner: '#16181f',
+  flaskGlassGlow: 'rgba(183, 192, 204, 0.28)',
+  flaskGlassPartition: 'rgba(183, 192, 204, 0.55)',
   border: '#2a2a3a',
   borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
   borderGlowFood: 'rgba(0, 212, 255, 0.4)',
