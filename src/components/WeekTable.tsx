@@ -136,15 +136,15 @@ function dateKey(day: Date): string {
   return `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
 }
 
-/** Фон ячейки «сегодня»: строка 1 чуть ярче, к 5-й — тусклее (приглушённый градиент) */
+/** Фон колонки «сегодня»: тёплый янтарь, читается и в будни, и в выходные */
 function todayCellBackground(rowIndex: number, maxRows: number): string {
   const invertedIdx = maxRows - 1 - rowIndex;
-  const alpha = 0.05 + invertedIdx * 0.02;
-  return `rgba(255, 255, 255, ${Math.min(alpha, 0.13)})`;
+  const alpha = 0.04 + invertedIdx * 0.012;
+  return `rgba(255, 179, 0, ${Math.min(alpha, 0.09)})`;
 }
 
 function todayHeaderBackground(): string {
-  return 'rgba(255, 255, 255, 0.05)';
+  return 'rgba(255, 213, 79, 0.08)';
 }
 
 function todayCellLayout(rowIndex: number, maxRows: number): ViewStyle {
@@ -183,6 +183,15 @@ function isWeekendColumn(colIdx: number): boolean {
 
 function isFridayColumn(colIdx: number): boolean {
   return colIdx === 4;
+}
+
+function TodayWash({ color }: { color: string }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.todayWash, { backgroundColor: color }]}
+    />
+  );
 }
 
 function WeekdaySplit({ color }: { color: string }) {
@@ -264,10 +273,10 @@ export function WeekTable({
                 style={[
                   styles.dayCol,
                   isToday && todayHeaderLayout(),
-                  !isToday && isWeekend && { backgroundColor: weekendHeaderBackground(variant) },
-                  isToday && { backgroundColor: todayHeaderBackground() },
+                  isWeekend && { backgroundColor: weekendHeaderBackground(variant) },
                 ]}
               >
+                {isToday && <TodayWash color={todayHeaderBackground()} />}
                 <Text
                   style={[
                     styles.headerText,
@@ -312,12 +321,12 @@ export function WeekTable({
                       styles.dayCol,
                       flex && styles.cellFlex,
                       isToday && todayCellLayout(rowIdx, maxRows),
-                      !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
-                      isToday && {
-                        backgroundColor: todayCellBackground(rowIdx, maxRows),
-                      },
+                      isWeekend && { backgroundColor: weekendCellBackground(variant) },
                     ]}
                   >
+                    {isToday && (
+                      <TodayWash color={todayCellBackground(rowIdx, maxRows)} />
+                    )}
                     {variant === 'exercise' && (isExerciseCell(cell) || isExerciseCell(ghostCell)) ? (
                       <View style={styles.exerciseMiniRow}>
                         {([0, 1, 2] as const).map((miniIdx) => {
@@ -440,9 +449,12 @@ export function WeekTable({
                   style={[
                     styles.dayCol,
                     flex && styles.cellFlex,
-                    !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
+                    isWeekend && { backgroundColor: weekendCellBackground(variant) },
                   ]}
                 >
+                  {isToday && (
+                    <TodayWash color={todayCellBackground(maxRows - 1, maxRows)} />
+                  )}
                   <Text
                     style={[
                       styles.sumText,
@@ -573,6 +585,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'stretch',
     position: 'relative',
+  },
+  todayWash: {
+    ...StyleSheet.absoluteFillObject,
   },
   weekdaySplit: {
     position: 'absolute',
