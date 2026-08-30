@@ -181,6 +181,19 @@ function isWeekendColumn(colIdx: number): boolean {
   return colIdx >= 5;
 }
 
+function isFridayColumn(colIdx: number): boolean {
+  return colIdx === 4;
+}
+
+function WeekdaySplit({ color }: { color: string }) {
+  return (
+    <View
+      pointerEvents="none"
+      style={[styles.weekdaySplit, { backgroundColor: color }]}
+    />
+  );
+}
+
 function weekendHeaderBackground(variant: Variant): string {
   return variant === 'exercise'
     ? 'rgba(156, 39, 176, 0.14)'
@@ -264,6 +277,9 @@ export function WeekTable({
                 >
                   {getDayOfMonth(day)}
                 </Text>
+                {isFridayColumn(colIdx) && (
+                  <WeekdaySplit color={headerPalette.headerBorder} />
+                )}
               </View>
             );
           })}
@@ -358,6 +374,9 @@ export function WeekTable({
                         );
                       })()
                     )}
+                    {isFridayColumn(colIdx) && (
+                      <WeekdaySplit color={headerPalette.headerBorder} />
+                    )}
                   </View>
                 );
               })}
@@ -440,6 +459,9 @@ export function WeekTable({
                   >
                     {hasActual ? sum : ghostSum > 0 ? ghostSum : ' '}
                   </Text>
+                  {isFridayColumn(colIdx) && (
+                    <WeekdaySplit color={headerPalette.headerBorder} />
+                  )}
                 </View>
               );
             })}
@@ -550,6 +572,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',
+    position: 'relative',
+  },
+  weekdaySplit: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: StyleSheet.hairlineWidth,
   },
   headerText: {
     fontFamily: fonts.ui,
