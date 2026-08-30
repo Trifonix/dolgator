@@ -780,14 +780,26 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
-              <Text style={[styles.leadCenter, { color: colors.food.primary }]}>
-                Прошлая неделя — питание
+              <Text style={[styles.leadCenter, { color: colors.intro.primary }]}>
+                Прошлая неделя —{'\n'}
+                <Text style={{ color: colors.food.primary }}>питание</Text>
               </Text>
-              <Text style={styles.hintCenter}>
-                {mealsDraft.length >= MIN_FOOD_MEALS
-                  ? `${mealsDraft.length} приём${mealsDraft.length === 1 ? '' : mealsDraft.length < 5 ? 'а' : 'ов'} — нажмите ЗАПОЛНИЛ`
-                  : `Приём ${Math.min(mealsDraft.length + 1, MAX_MEALS)} из ${MAX_MEALS}`}
-              </Text>
+              {mealsDraft.length >= MIN_FOOD_MEALS ? (
+                <Text style={[styles.hintCenter, { color: colors.intro.primary }]}>
+                  <Text style={{ color: colors.food.primary }}>
+                    {mealsDraft.length} приём
+                    {mealsDraft.length === 1 ? '' : mealsDraft.length < 5 ? 'а' : 'ов'}
+                  </Text>
+                  {' — нажмите ЗАПОЛНИЛ'}
+                </Text>
+              ) : (
+                <Text style={[styles.hintCenter, { color: colors.intro.primary }]}>
+                  Приём{' '}
+                  <Text style={{ color: colors.food.primary }}>
+                    {Math.min(mealsDraft.length + 1, MAX_MEALS)} из {MAX_MEALS}
+                  </Text>
+                </Text>
+              )}
             </Animated.View>
 
             <Animated.View
@@ -840,7 +852,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onPress={applyFoodExample}
                 disabled={tableReveal}
               >
-                <Text style={styles.secondaryBtnText}>Использовать пример</Text>
+                <Text style={styles.secondaryBtnText}>
+                  Использовать{' '}
+                  <Text style={{ color: colors.intro.primary }}>пример</Text>
+                </Text>
               </Pressable>
             </Animated.View>
           </View>
