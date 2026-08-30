@@ -1,5 +1,7 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -44,6 +46,81 @@ const WELCOME_P1 =
 const WELCOME_P2 =
   'Сначала нужно ввести примерные значения за прошлую неделю — они станут ориентиром для плавного прогресса: больше повторений в тренировках и чуть меньше граммов в питании каждую неделю.';
 
+const EXERCISE_INTRO_TITLE = 'Повторения за прошлую неделю';
+const EXERCISE_INTRO_P1 =
+  'Сейчас нужно ввести примерные значения в 15 подходов (по 5 подходов в упражнении), которые вы сделали на прошлой неделе в один тренировочный день: Ноги (приседания) > Грудные (отжимания) > Спина (подтягивания) | любые другие базовые упражнения.';
+const EXERCISE_INTRO_P2 =
+  'Можно заполнить вручную через − / число / + и OK, либо нажать «Использовать пример» и принять готовый вариант.';
+
+const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro'];
+const INTRO_FADE_MS = 280;
+
+function IntroActStep({
+  title,
+  paragraph1,
+  paragraph2,
+  paragraph2Muted = false,
+  buttonLabel,
+  onAction,
+  onTypingComplete,
+  canProceed,
+  busy,
+}: {
+  title: string;
+  paragraph1: string;
+  paragraph2: string;
+  paragraph2Muted?: boolean;
+  buttonLabel: string;
+  onAction: () => void;
+  onTypingComplete: () => void;
+  canProceed: boolean;
+  busy: boolean;
+}) {
+  const [titleDone, setTitleDone] = useState(false);
+  const [p1Done, setP1Done] = useState(false);
+
+  return (
+    <View style={styles.introInner}>
+      <TypewriterText
+        text={title}
+        style={styles.leadCenter}
+        speed={42}
+        onComplete={() => setTitleDone(true)}
+      />
+      {titleDone ? (
+        <TypewriterText
+          text={paragraph1}
+          style={styles.paragraphCenter}
+          speed={22}
+          onComplete={() => setP1Done(true)}
+        />
+      ) : null}
+      {p1Done ? (
+        <>
+          <Pressable
+            style={[
+              styles.introPrimaryBtn,
+              (!canProceed || busy) && styles.primaryBtnDisabled,
+            ]}
+            onPress={onAction}
+            disabled={!canProceed || busy}
+          >
+            <Text style={styles.primaryBtnText}>
+              {canProceed ? buttonLabel : '…'}
+            </Text>
+          </Pressable>
+          <TypewriterText
+            text={paragraph2}
+            style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}
+            speed={22}
+            onComplete={onTypingComplete}
+          />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
 function WelcomeStep({
   onTypingComplete,
   onStart,
@@ -55,48 +132,43 @@ function WelcomeStep({
   canStart: boolean;
   busy: boolean;
 }) {
-  const [titleDone, setTitleDone] = useState(false);
-  const [p1Done, setP1Done] = useState(false);
-
   return (
-    <View style={styles.welcomeInner}>
-      <TypewriterText
-        text={WELCOME_TITLE}
-        style={styles.leadCenter}
-        speed={42}
-        onComplete={() => setTitleDone(true)}
-      />
-      {titleDone ? (
-        <TypewriterText
-          text={WELCOME_P1}
-          style={styles.paragraphCenter}
-          speed={22}
-          onComplete={() => setP1Done(true)}
-        />
-      ) : null}
-      {p1Done ? (
-        <>
-          <Pressable
-            style={[
-              styles.welcomePrimaryBtn,
-              (!canStart || busy) && styles.primaryBtnDisabled,
-            ]}
-            onPress={onStart}
-            disabled={!canStart || busy}
-          >
-            <Text style={styles.primaryBtnText}>
-              {canStart ? 'Начать' : '…'}
-            </Text>
-          </Pressable>
-          <TypewriterText
-            text={WELCOME_P2}
-            style={styles.paragraphCenter}
-            speed={22}
-            onComplete={onTypingComplete}
-          />
-        </>
-      ) : null}
-    </View>
+    <IntroActStep
+      title={WELCOME_TITLE}
+      paragraph1={WELCOME_P1}
+      paragraph2={WELCOME_P2}
+      buttonLabel="Начать"
+      onAction={onStart}
+      onTypingComplete={onTypingComplete}
+      canProceed={canStart}
+      busy={busy}
+    />
+  );
+}
+
+function ExerciseIntroStep({
+  onTypingComplete,
+  onContinue,
+  canContinue,
+  busy,
+}: {
+  onTypingComplete: () => void;
+  onContinue: () => void;
+  canContinue: boolean;
+  busy: boolean;
+}) {
+  return (
+    <IntroActStep
+      title={EXERCISE_INTRO_TITLE}
+      paragraph1={EXERCISE_INTRO_P1}
+      paragraph2={EXERCISE_INTRO_P2}
+      paragraph2Muted
+      buttonLabel="ТАБЛИЦА"
+      onAction={onContinue}
+      onTypingComplete={onTypingComplete}
+      canProceed={canContinue}
+      busy={busy}
+    />
   );
 }
 
@@ -145,7 +217,57 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [confirmedMealDays, setConfirmedMealDays] = useState<number[][]>([]);
   const [pendingConfirm, setPendingConfirm] = useState<'exercise' | 'food' | null>(null);
   const [busy, setBusy] = useState(false);
-  const [welcomeReady, setWelcomeReady] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
+  const introOpacity = useRef(new Animated.Value(1)).current;
+  const introSlide = useRef(new Animated.Value(0)).current;
+  const introTransitioning = useRef(false);
+
+  const isIntroAct = INTRO_ACTS.includes(step);
+
+  useEffect(() => {
+    if (INTRO_ACTS.includes(step)) {
+      setIntroReady(false);
+    }
+  }, [step]);
+
+  const transitionIntroStep = useCallback((next: Step) => {
+    if (introTransitioning.current) return;
+    introTransitioning.current = true;
+
+    Animated.parallel([
+      Animated.timing(introOpacity, {
+        toValue: 0,
+        duration: INTRO_FADE_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(introSlide, {
+        toValue: -18,
+        duration: INTRO_FADE_MS,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setStep(next);
+      introSlide.setValue(18);
+      Animated.parallel([
+        Animated.timing(introOpacity, {
+          toValue: 1,
+          duration: INTRO_FADE_MS + 80,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(introSlide, {
+          toValue: 0,
+          duration: INTRO_FADE_MS + 80,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        introTransitioning.current = false;
+      });
+    });
+  }, [introOpacity, introSlide]);
 
   const prevWeekDays = useMemo(
     () => getPreviousWeekDays(getCurrentWeekDays()),
@@ -260,34 +382,32 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     }
   }, [exerciseDraft, exerciseFull, mealsDraft, prevWeekKeys]);
 
+  const renderIntroAct = () => {
+    if (step === 'welcome') {
+      return (
+        <WelcomeStep
+          onTypingComplete={() => setIntroReady(true)}
+          onStart={() => transitionIntroStep('exercise-intro')}
+          canStart={introReady}
+          busy={busy}
+        />
+      );
+    }
+    return (
+      <ExerciseIntroStep
+        onTypingComplete={() => setIntroReady(true)}
+        onContinue={() => setStep('exercise')}
+        canContinue={introReady}
+        busy={busy}
+      />
+    );
+  };
+
   const renderBody = () => {
     switch (step) {
       case 'welcome':
-        return (
-          <WelcomeStep
-            onTypingComplete={() => setWelcomeReady(true)}
-            onStart={handlePrimary}
-            canStart={welcomeReady}
-            busy={busy}
-          />
-        );
-
       case 'exercise-intro':
-        return (
-          <>
-            <Text style={styles.lead}>Повторения за прошлую неделю</Text>
-            <Text style={styles.paragraph}>
-              Сейчас нужно ввести примерные значения в 15 подходов (по 5 подходов в
-              упражнении), которые вы сделали на прошлой неделе в один тренировочный
-              день: ноги → грудь → спина.
-            </Text>
-            <Text style={styles.paragraphMuted}>
-              Можно заполнить вручную через − / число / + и OK, либо нажать
-              «Использовать пример» и сразу принять готовый вариант
-              4-4-4-4-8 · 5-5-5-5-12 · 2-2-2-2-4.
-            </Text>
-          </>
-        );
+        return renderIntroAct();
 
       case 'exercise':
         return (
@@ -376,8 +496,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   const primaryLabel = (() => {
-    if (step === 'welcome') return 'Начать';
-    if (step === 'exercise-intro') return 'К таблице повторений';
     if (step === 'exercise') return exerciseFull ? 'Далее — питание' : 'Принять пример и далее';
     if (step === 'food-intro') return 'К таблице питания';
     if (step === 'food') return mealsDone ? 'Завершить настройку' : 'Принять пример и завершить';
@@ -386,12 +504,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const handlePrimary = () => {
     switch (step) {
-      case 'welcome':
-        setStep('exercise-intro');
-        break;
-      case 'exercise-intro':
-        setStep('exercise');
-        break;
       case 'exercise':
         finishExerciseStep();
         break;
@@ -414,9 +526,18 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {step === 'welcome' ? (
-        <View style={styles.welcomeContainer}>
-          {renderBody()}
+      {isIntroAct ? (
+        <View style={styles.introContainer}>
+          <Animated.View
+            key={step}
+            style={{
+              width: '100%',
+              opacity: introOpacity,
+              transform: [{ translateY: introSlide }],
+            }}
+          >
+            {renderBody()}
+          </Animated.View>
         </View>
       ) : (
         <ScrollView
@@ -428,7 +549,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         </ScrollView>
       )}
 
-      {step !== 'welcome' ? (
+      {!isIntroAct ? (
         <Pressable
           style={[styles.primaryBtn, busy && styles.primaryBtnDisabled]}
           onPress={handlePrimary}
@@ -468,18 +589,18 @@ const styles = StyleSheet.create({
     gap: GAP,
     paddingBottom: GAP * 2,
   },
-  welcomeContainer: {
+  introContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: GAP,
   },
-  welcomeInner: {
+  introInner: {
     width: '100%',
     alignItems: 'center',
     gap: GAP * 0.75,
   },
-  welcomePrimaryBtn: {
+  introPrimaryBtn: {
     alignSelf: 'center',
     minWidth: 160,
     paddingVertical: 12,
@@ -500,6 +621,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     lineHeight: 22,
+    textAlign: 'center',
+  },
+  paragraphCenterMuted: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
   },
   lead: {
