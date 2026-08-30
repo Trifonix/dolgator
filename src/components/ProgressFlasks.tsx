@@ -8,9 +8,10 @@ import {
 } from '../theme/layout';
 import type { FlaskFill, FoodFlaskFill } from '../utils/flaskMetrics';
 
-const NECK_HEIGHT = 7;
-const TICK = 5;
-const BODY_HEIGHT = FLASK_HEIGHT - NECK_HEIGHT;
+const TICK_GUTTER = 6;
+const PX = 2;
+const YEL = '#ffe566';
+const TAN = '#c4a035';
 
 function useFillHeight(ratio: number, maxPx: number) {
   const clamped = Math.min(1, Math.max(0, ratio));
@@ -24,30 +25,45 @@ function useFillHeight(ratio: number, maxPx: number) {
     }).start();
   }, [anim, clamped]);
 
+  const extra = maxPx > 0 ? 3 : 0;
   return anim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, maxPx],
+    outputRange: [0, maxPx + extra],
   });
 }
 
-function SideTicks({
+function SideNotch({
+  side,
   markRatio,
   hasBaseline,
-  bodyHeight,
-  color,
 }: {
+  side: 'left' | 'right';
   markRatio: number;
   hasBaseline: boolean;
-  bodyHeight: number;
-  color: string;
 }) {
   if (!hasBaseline) return null;
-  const bottom = Math.max(0, bodyHeight * markRatio - 1);
+  const bottom = Math.max(2, FLASK_HEIGHT * markRatio - PX * 1.5);
+  const isLeft = side === 'left';
+
   return (
-    <>
-      <View style={[styles.tick, { left: 0, bottom, backgroundColor: color }]} />
-      <View style={[styles.tick, { right: 0, bottom, backgroundColor: color }]} />
-    </>
+    <View
+      pointerEvents="none"
+      style={[
+        styles.notch,
+        { bottom },
+        isLeft ? { left: TICK_GUTTER - PX * 2 } : { right: TICK_GUTTER - PX * 2 },
+        { flexDirection: isLeft ? 'row' : 'row-reverse' },
+      ]}
+    >
+      <View>
+        <View style={[styles.px, { backgroundColor: TAN }]} />
+        <View style={[styles.px, { backgroundColor: YEL }]} />
+        <View style={[styles.px, { backgroundColor: TAN }]} />
+      </View>
+      <View style={styles.notchInner}>
+        <View style={[styles.px, { backgroundColor: YEL }]} />
+      </View>
+    </View>
   );
 }
 
@@ -58,7 +74,7 @@ function ChamberLiquid({ fill, color }: { fill: FlaskFill; color: string }) {
   return (
     <View
       style={styles.chamber}
-      onLayout={(e) => setH(e.nativeEvent.layout.height)}
+      onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
     >
       <Animated.View
         style={[
@@ -79,36 +95,27 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
 
   return (
     <View style={styles.exerciseFlask}>
-      <SideTicks
-        markRatio={mark.markRatio}
-        hasBaseline={mark.hasBaseline}
-        bodyHeight={BODY_HEIGHT}
-        color="#ffe082"
-      />
-      <View style={styles.flaskClip}>
-        <View style={[styles.neck, { borderColor: colors.exercise.primary }]} />
-        <View
-          style={[
-            styles.body,
-            { borderColor: colors.exercise.primary, shadowColor: colors.exercise.primary },
-          ]}
-        >
-          {fills.map((fill, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && (
-                <View style={[styles.insert, { backgroundColor: colors.exercise.primary }]} />
-              )}
-              <ChamberLiquid
-                fill={fill}
-                color={
-                  fill.hasBaseline && fill.fillRatio >= fill.markRatio
-                    ? colors.compareGood
-                    : 'rgba(224, 64, 251, 0.72)'
-                }
-              />
-            </React.Fragment>
-          ))}
-        </View>
+      <SideNotch side="left" markRatio={mark.markRatio} hasBaseline={mark.hasBaseline} />
+      <SideNotch side="right" markRatio={mark.markRatio} hasBaseline={mark.hasBaseline} />
+      <View
+        style={[
+          styles.body,
+          { borderColor: colors.exercise.primary, shadowColor: colors.exercise.primary },
+        ]}
+      >
+        {fills.map((fill, idx) => (
+          <ChamberLiquid
+            key={idx}
+            fill={fill}
+            color={
+              fill.hasBaseline && fill.fillRatio >= fill.markRatio
+                ? colors.compareGood
+                : colors.exercise.primary
+            }
+          />
+        ))}
+        <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
+        <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
       </View>
     </View>
   );
@@ -121,24 +128,18 @@ interface FoodFlaskProps {
 export function FoodFlask({ fill }: FoodFlaskProps) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
-  const liquid = fill.overTarget
-    ? colors.compareBad
-    : 'rgba(0, 212, 255, 0.72)';
+  const liquid = fill.overTarget ? colors.compareBad : colors.food.primary;
 
   return (
     <View style={styles.foodWrap}>
-      <SideTicks
-        markRatio={fill.markRatio}
-        hasBaseline={fill.hasBaseline}
-        bodyHeight={FLASK_HEIGHT}
-        color="#ffe082"
-      />
+      <SideNotch side="left" markRatio={fill.markRatio} hasBaseline={fill.hasBaseline} />
+      <SideNotch side="right" markRatio={fill.markRatio} hasBaseline={fill.hasBaseline} />
       <View
         style={[
           styles.foodTube,
           { borderColor: colors.food.primary, shadowColor: colors.food.primary },
         ]}
-        onLayout={(e) => setH(e.nativeEvent.layout.height)}
+        onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
         <Animated.View
           style={[styles.liquid, { backgroundColor: liquid, height: fillHeight }]}
@@ -150,39 +151,25 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 
 const styles = StyleSheet.create({
   exerciseFlask: {
-    width: FLASK_EXERCISE_WIDTH + TICK * 2,
+    width: FLASK_EXERCISE_WIDTH + TICK_GUTTER * 2,
     height: FLASK_HEIGHT,
     flexGrow: 0,
     flexShrink: 0,
     position: 'relative',
   },
-  flaskClip: {
-    marginHorizontal: TICK,
-    height: FLASK_HEIGHT,
-    overflow: 'hidden',
-  },
-  neck: {
-    width: 14,
-    height: NECK_HEIGHT,
-    alignSelf: 'center',
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 5,
-    borderTopRightRadius: 5,
-    backgroundColor: colors.bgCard,
-    marginBottom: -1.5,
-    zIndex: 2,
-  },
   body: {
-    flex: 1,
+    height: FLASK_HEIGHT,
+    marginHorizontal: TICK_GUTTER,
     flexDirection: 'row',
     alignItems: 'stretch',
-    borderWidth: 1.5,
-    borderRadius: 6,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
+    borderWidth: 2,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
     backgroundColor: colors.bgCard,
     overflow: 'hidden',
+    position: 'relative',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.45,
     shadowRadius: 6,
@@ -193,25 +180,30 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  insert: {
-    width: 1.5,
-    alignSelf: 'stretch',
-    opacity: 0.9,
+  partition: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    marginLeft: -1,
+    backgroundColor: colors.exercise.primary,
+    zIndex: 2,
   },
   foodWrap: {
-    width: FLASK_FOOD_WIDTH + TICK * 2,
+    width: FLASK_FOOD_WIDTH + TICK_GUTTER * 2,
     height: FLASK_HEIGHT,
     flexGrow: 0,
     flexShrink: 0,
     position: 'relative',
   },
   foodTube: {
-    marginHorizontal: TICK,
+    marginHorizontal: TICK_GUTTER,
     height: FLASK_HEIGHT,
-    borderWidth: 1.5,
-    borderRadius: 4,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    borderWidth: 2,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+    borderBottomLeftRadius: 9,
+    borderBottomRightRadius: 9,
     backgroundColor: colors.bgCard,
     overflow: 'hidden',
     position: 'relative',
@@ -223,13 +215,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: -2,
   },
-  tick: {
+  notch: {
     position: 'absolute',
-    width: TICK,
-    height: 2,
-    borderRadius: 1,
-    zIndex: 3,
+    width: PX * 2,
+    height: PX * 3,
+    zIndex: 4,
+  },
+  notchInner: {
+    width: PX,
+    justifyContent: 'center',
+  },
+  px: {
+    width: PX,
+    height: PX,
   },
 });

@@ -9,10 +9,10 @@ export const GAP = Math.round(BASE_FONT * 1.2);
 export const REF_WIDTH = 360;
 export const REF_HEIGHT = 640;
 
-/** Фиксированная высота колб в центре (dp) */
-export const FLASK_HEIGHT = 68;
-export const FLASK_EXERCISE_WIDTH = 48;
-export const FLASK_FOOD_WIDTH = 22;
+/** Фиксированная высота колб — как два ряда счётчиков */
+export const FLASK_HEIGHT = 100;
+export const FLASK_EXERCISE_WIDTH = 38;
+export const FLASK_FOOD_WIDTH = 16;
 
 /** Мин. отступ снизу под 3-кнопочную навигацию Android (dp) */
 export const ANDROID_NAV_BAR_MIN = 40;
