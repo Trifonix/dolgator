@@ -237,7 +237,7 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
   );
 }
 
-function FlaskCaption({ word }: { word: string }) {
+function FlaskCaption({ word, color }: { word: string; color: string }) {
   const [h, setH] = useState(FLASK_HEIGHT);
   const letters = Array.from(word);
   const fontSize = Math.min(13, Math.max(8, Math.floor(h / letters.length) - 1));
@@ -249,7 +249,10 @@ function FlaskCaption({ word }: { word: string }) {
       onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
     >
       {letters.map((ch, i) => (
-        <Text key={`${ch}-${i}`} style={[styles.captionLetter, { fontSize, lineHeight: fontSize + 1 }]}>
+        <Text
+          key={`${ch}-${i}`}
+          style={[styles.captionLetter, { fontSize, lineHeight: fontSize + 1, color }]}
+        >
           {ch}
         </Text>
       ))}
@@ -282,7 +285,7 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
           <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
         </View>
       </View>
-      <FlaskCaption word="ПОВТОРЫ" />
+      <FlaskCaption word="ПОВТОРЫ" color={colors.flaskCaptionExercise} />
     </View>
   );
 }
@@ -297,7 +300,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 
   return (
     <View style={styles.flaskWithCaption}>
-      <FlaskCaption word="ГРАММЫ" />
+      <FlaskCaption word="ГРАММЫ" color={colors.flaskCaptionFood} />
       <View style={styles.foodWrap}>
         <SideNotch
           side="left"
@@ -344,7 +347,6 @@ const styles = StyleSheet.create({
   captionLetter: {
     fontFamily: fonts.ui,
     fontWeight: '700',
-    color: colors.textMuted,
     textAlign: 'center',
   },
   exerciseFlask: {

@@ -41,6 +41,9 @@ export const colors = {
   flaskGlassInner: '#16181f',
   flaskGlassGlow: 'rgba(183, 192, 204, 0.28)',
   flaskGlassPartition: 'rgba(183, 192, 204, 0.55)',
+  /** Вертикальные подписи у колб */
+  flaskCaptionExercise: '#b8a0d4',
+  flaskCaptionFood: '#8ec8e8',
   border: '#2a2a3a',
   borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
   borderGlowFood: 'rgba(0, 212, 255, 0.4)',
