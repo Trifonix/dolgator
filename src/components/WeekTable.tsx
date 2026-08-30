@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   weekCompareStack: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
+    gap: 4,
   },
   weekCompareCurrent: {
     fontSize: 8,
