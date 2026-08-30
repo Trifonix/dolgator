@@ -6,10 +6,10 @@ export const EXERCISE_BAND_LOW = 0.6;
 /** Черта на колбе упражнений: объём прошлой недели = 80% высоты */
 export const EXERCISE_MARK_RATIO = 0.8;
 
-/** Засечка нормы еды на колбе */
-export const FOOD_MARK_RATIO = 0.95;
-/** Красная зона еды */
-export const FOOD_RED_RATIO = 0.99;
+/** Засечка / начало жёлтой зоны еды */
+export const FOOD_MARK_RATIO = 0.96;
+/** Красная зона: съедено ≥ среднесуточного прошлой недели */
+export const FOOD_RED_RATIO = 1;
 
 export type FlaskKind = 'exercise' | 'food';
 
@@ -147,11 +147,13 @@ export function prevWeekFoodDailyAverage(
 
 export interface FoodFlaskFill extends FlaskFill {
   overTarget: boolean;
+  /** Доля от нормы для цвета мигания (может быть > 1) */
+  pulseRatio: number;
 }
 
 /**
- * Сегодняшняя сумма граммов. 100% колбы = среднесуточная прошлой недели.
- * Черта = 95% — дальше жёлтая, с 99% красная.
+ * Сегодняшняя сумма граммов. 100% колбы = среднесуточное прошлой недели.
+ * До 96% — зелёное мигание, 96–100% — жёлтое, ≥100% — красное.
  */
 export function foodFlaskFill(
   todaySum: number,
@@ -166,18 +168,21 @@ export function foodFlaskFill(
       markRatio: FOOD_MARK_RATIO,
       hasBaseline: false,
       overTarget: false,
+      pulseRatio: 0,
     };
   }
 
-  const target = capacity * FOOD_MARK_RATIO;
   const raw = todaySum / capacity;
+  /** Для цвета мигания не зажимаем в 1 — иначе любой «полный» день всегда красный */
+  const pulseRatio = raw;
 
   return {
     fillRatio: Math.min(1, raw),
     overflowRatio: Math.max(0, raw - 1),
     markRatio: FOOD_MARK_RATIO,
     hasBaseline: true,
-    overTarget: todaySum > target,
+    overTarget: pulseRatio >= FOOD_RED_RATIO,
+    pulseRatio,
   };
 }
 

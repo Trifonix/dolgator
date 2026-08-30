@@ -78,14 +78,16 @@ function PulseLiquid({
   fillRatio,
   height,
   phaseDelayMs = 0,
+  pulseRatio,
 }: {
   kind: FlaskKind;
   fillRatio: number;
   height: Animated.AnimatedInterpolation<string | number>;
   phaseDelayMs?: number;
+  pulseRatio?: number;
 }) {
   const mix = useSmoothPulse(fillRatio > 0, phaseDelayMs);
-  const accent = flaskPulseAccent(kind, fillRatio);
+  const accent = flaskPulseAccent(kind, pulseRatio ?? fillRatio);
   const backgroundColor = mix.interpolate({
     inputRange: [0, 1],
     outputRange: [colors.flaskLiquid, accent],
@@ -202,7 +204,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
         ]}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
-        <PulseLiquid kind="food" fillRatio={fill.fillRatio} height={fillHeight} />
+        <PulseLiquid kind="food" fillRatio={fill.fillRatio} pulseRatio={fill.pulseRatio} height={fillHeight} />
       </View>
     </View>
   );

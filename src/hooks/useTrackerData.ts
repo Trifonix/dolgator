@@ -28,7 +28,6 @@ import {
 import { needsOnboarding } from '../utils/onboarding';
 import { buildPreviousWeekSeed, PREV_WEEK_EXERCISE_COL, PREV_WEEK_FOOD_COL } from '../utils/onboardingSeed';
 import {
-  currentFoodDailyTarget,
   exerciseTargetDailySum,
   foodWeekTarget,
   prevWeekTotals,
@@ -376,7 +375,11 @@ export function useTrackerData() {
   const prevWeekFoodTotal = state
     ? sumFoodWeek(state.days, prevWeekKeys)
     : 0;
-  const weekFoodDailyAvg = Math.round(weekFoodTotal / 7);
+  /** Прогноз среднесуточного: среднее по заполненным дням этой недели */
+  const weekFoodProjected = state
+    ? foodDailyAverage(state.days, weekKeys)
+    : null;
+  const weekFoodDailyAvg = weekFoodProjected != null ? Math.round(weekFoodProjected) : 0;
   const prevWeekFoodDailyAvg = Math.round(prevWeekFoodTotal / 7);
 
   const todayExercises = state
@@ -432,8 +435,8 @@ export function useTrackerData() {
   const fallbackFoodDay =
     weekFoodExclToday
     ?? DEFAULT_STATE.lastMealGrams * MAX_MEALS;
-  const foodBaseline = state?.onboardingCompleted
-    ? currentFoodDailyTarget(state, prevWeekKeys)
+  const foodBaseline = prevWeekFoodDailyAvg > 0
+    ? prevWeekFoodDailyAvg
     : state
       ? prevWeekFoodDailyAverage(state.days, prevWeekKeys)
       : null;
