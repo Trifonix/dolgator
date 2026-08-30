@@ -58,10 +58,16 @@ const EXERCISE_INTRO_GROUPS: ExtraBlock[] = [
 const EXERCISE_INTRO_P2 =
   'Можно заполнить вручную через − / число / + и OK, либо нажать «Использовать пример» и принять готовый вариант.';
 
+const FOOD_INTRO_TITLE = 'Питание за прошлую неделю';
+const FOOD_INTRO_P1 =
+  'Теперь введите граммы за один день — до 5 приёмов пищи. Например: 250-400-500. Эти данные размажутся по будням прошлой недели с небольшим разбросом ±10–20 г.';
+const FOOD_INTRO_P2 =
+  'На этой неделе цель — чуть меньше прошлой: если за прошлую неделю выходило ~7000 г, стремитесь не превышать ~1000 г в день и снижать объём плавно: 6990 → 6980 → 6950…';
+
 const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
-const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro'];
-const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise'];
+const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
+const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise', 'food-intro'];
 const INTRO_FADE_MS = 280;
 
 function IntroActStep({
@@ -71,6 +77,7 @@ function IntroActStep({
   paragraph2Muted = false,
   extraBlocks,
   buttonLabel,
+  buttonColor,
   onAction,
   onTypingComplete,
   canProceed,
@@ -82,6 +89,7 @@ function IntroActStep({
   paragraph2Muted?: boolean;
   extraBlocks?: ExtraBlock[];
   buttonLabel: string;
+  buttonColor?: string;
   onAction: () => void;
   onTypingComplete: () => void;
   canProceed: boolean;
@@ -97,7 +105,11 @@ function IntroActStep({
     <View style={styles.introInner}>
       <TypewriterText
         text={title}
-        style={styles.leadCenter}
+        style={
+          buttonColor
+            ? [styles.leadCenter, { color: buttonColor }]
+            : styles.leadCenter
+        }
         speed={42}
         onComplete={() => setTitleDone(true)}
       />
@@ -131,6 +143,7 @@ function IntroActStep({
           <Pressable
             style={[
               styles.introPrimaryBtn,
+              buttonColor ? { backgroundColor: buttonColor } : null,
               (!canProceed || busy) && styles.primaryBtnDisabled,
             ]}
             onPress={onAction}
@@ -196,6 +209,33 @@ function ExerciseIntroStep({
       paragraph2={EXERCISE_INTRO_P2}
       paragraph2Muted
       buttonLabel="ТАБЛИЦА"
+      onAction={onContinue}
+      onTypingComplete={onTypingComplete}
+      canProceed={canContinue}
+      busy={busy}
+    />
+  );
+}
+
+function FoodIntroStep({
+  onTypingComplete,
+  onContinue,
+  canContinue,
+  busy,
+}: {
+  onTypingComplete: () => void;
+  onContinue: () => void;
+  canContinue: boolean;
+  busy: boolean;
+}) {
+  return (
+    <IntroActStep
+      title={FOOD_INTRO_TITLE}
+      paragraph1={FOOD_INTRO_P1}
+      paragraph2={FOOD_INTRO_P2}
+      paragraph2Muted
+      buttonLabel="ТАБЛИЦА"
+      buttonColor={colors.food.dim}
       onAction={onContinue}
       onTypingComplete={onTypingComplete}
       canProceed={canContinue}
@@ -434,10 +474,20 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         />
       );
     }
+    if (step === 'exercise-intro') {
+      return (
+        <ExerciseIntroStep
+          onTypingComplete={() => setIntroReady(true)}
+          onContinue={() => setStep('exercise')}
+          canContinue={introReady}
+          busy={busy}
+        />
+      );
+    }
     return (
-      <ExerciseIntroStep
+      <FoodIntroStep
         onTypingComplete={() => setIntroReady(true)}
-        onContinue={() => setStep('exercise')}
+        onContinue={() => setStep('food')}
         canContinue={introReady}
         busy={busy}
       />
@@ -448,6 +498,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     switch (step) {
       case 'welcome':
       case 'exercise-intro':
+      case 'food-intro':
         return renderIntroAct();
 
       case 'exercise':
@@ -497,23 +548,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           </View>
         );
 
-      case 'food-intro':
-        return (
-          <>
-            <Text style={styles.lead}>Питание за прошлую неделю</Text>
-            <Text style={styles.paragraph}>
-              Теперь введите граммы за один день — до 5 приёмов пищи. Например:
-              250-400-500. Эти данные размажутся по будням прошлой недели с небольшим
-              разбросом ±10–20 г.
-            </Text>
-            <Text style={styles.paragraphMuted}>
-              На этой неделе цель — чуть меньше прошлой: если за прошлую неделю
-              выходило ~7000 г, стремитесь не превышать ~1000 г в день и снижать
-              объём плавно: 6990 → 6980 → 6950…
-            </Text>
-          </>
-        );
-
       case 'food':
         return (
           <>
@@ -550,20 +584,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   const primaryLabel = (() => {
-    if (step === 'food-intro') return 'К таблице питания';
     if (step === 'food') return mealsDone ? 'Завершить настройку' : 'Принять пример и завершить';
     return 'OK';
   })();
 
   const handlePrimary = () => {
-    switch (step) {
-      case 'food-intro':
-        setStep('food');
-        break;
-      case 'food':
-        finishFoodPreview();
-        finishFoodStep();
-        break;
+    if (step === 'food') {
+      finishFoodPreview();
+      finishFoodStep();
     }
   };
 
