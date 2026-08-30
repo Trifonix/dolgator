@@ -17,7 +17,9 @@ import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../ty
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
 import {
+  exerciseAvgPerSet,
   exerciseFlaskFill,
+  foodDailyAverage,
   foodFlaskFill,
   prevWeekExerciseAvgPerSet,
   prevWeekFoodDailyAverage,
@@ -287,22 +289,46 @@ export function useTrackerData() {
   const prevAvgs = state
     ? prevWeekExerciseAvgPerSet(state.days, prevWeekKeys)
     : [null, null, null] as const;
-  const fallbackAvgPerSet = state?.lastExerciseRep ?? DEFAULT_STATE.lastExerciseRep;
+  const weekAvgsExclToday = state
+    ? exerciseAvgPerSet(
+        state.days,
+        weekKeys.filter((key) => key !== todayKey),
+      )
+    : [null, null, null] as const;
   const exerciseFlasks: [
     ReturnType<typeof exerciseFlaskFill>,
     ReturnType<typeof exerciseFlaskFill>,
     ReturnType<typeof exerciseFlaskFill>,
   ] = [
-    exerciseFlaskFill(todaySums[0], prevAvgs[0], fallbackAvgPerSet),
-    exerciseFlaskFill(todaySums[1], prevAvgs[1], fallbackAvgPerSet),
-    exerciseFlaskFill(todaySums[2], prevAvgs[2], fallbackAvgPerSet),
+    exerciseFlaskFill(
+      todaySums[0],
+      prevAvgs[0],
+      weekAvgsExclToday[0] ?? DEFAULT_STATE.lastExerciseRep,
+    ),
+    exerciseFlaskFill(
+      todaySums[1],
+      prevAvgs[1],
+      weekAvgsExclToday[1] ?? DEFAULT_STATE.lastExerciseRep,
+    ),
+    exerciseFlaskFill(
+      todaySums[2],
+      prevAvgs[2],
+      weekAvgsExclToday[2] ?? DEFAULT_STATE.lastExerciseRep,
+    ),
   ];
 
   const todayFoodSum = state
     ? sumMealsDay(getDayRecord(state, todayKey).meals)
     : 0;
+  const weekFoodExclToday = state
+    ? foodDailyAverage(
+        state.days,
+        weekKeys.filter((key) => key !== todayKey),
+      )
+    : null;
   const fallbackFoodDay =
-    (state?.lastMealGrams ?? DEFAULT_STATE.lastMealGrams) * MAX_MEALS;
+    weekFoodExclToday
+    ?? DEFAULT_STATE.lastMealGrams * MAX_MEALS;
   const foodFlask = foodFlaskFill(
     todayFoodSum,
     state ? prevWeekFoodDailyAverage(state.days, prevWeekKeys) : null,

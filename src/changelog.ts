@@ -7,6 +7,13 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.21',
+    date: '2026-08-30',
+    items: [
+      'Эталон колб не скачет от последнего ввода: только прошлая неделя или другие дни этой',
+    ],
+  },
+  {
     version: '0.1.20',
     date: '2026-08-30',
     items: [

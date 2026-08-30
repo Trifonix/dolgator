@@ -35,14 +35,14 @@ function asState(days: Record<string, DayRecord>): AppState {
   return { days } as AppState;
 }
 
-/** Среднее повторений в подходе за прошлую неделю (ноги / грудь / спина) */
-export function prevWeekExerciseAvgPerSet(
+/** Среднее повторений в подходе за набор дней (ноги / грудь / спина) */
+export function exerciseAvgPerSet(
   days: Record<string, DayRecord>,
-  prevWeekKeys: string[],
+  dateKeys: string[],
 ): [number | null, number | null, number | null] {
   const buckets: [number[], number[], number[]] = [[], [], []];
 
-  for (const key of prevWeekKeys) {
+  for (const key of dateKeys) {
     const exercises = getDayExercises(getDayRecord(asState(days), key));
     for (let i = 0; i < 3; i++) {
       buckets[i].push(...exercises[i]);
@@ -50,6 +50,14 @@ export function prevWeekExerciseAvgPerSet(
   }
 
   return [mean(buckets[0]), mean(buckets[1]), mean(buckets[2])];
+}
+
+/** Среднее повторений в подходе за прошлую неделю (ноги / грудь / спина) */
+export function prevWeekExerciseAvgPerSet(
+  days: Record<string, DayRecord>,
+  prevWeekKeys: string[],
+): [number | null, number | null, number | null] {
+  return exerciseAvgPerSet(days, prevWeekKeys);
 }
 
 export function sumExerciseColumn(column: number[]): number {
@@ -76,7 +84,7 @@ function firstPositive(...values: Array<number | null | undefined>): number | nu
 /**
  * Сегодняшняя сумма подходов vs эталон.
  * Черта (80%) = средний подход × 5. Полная колба = эталон / 0.8 (запас +25%).
- * Без прошлой недели берётся fallback (обычно последний шаг счётчика).
+ * Без прошлой недели — среднее по другим дням текущей недели или значение по умолчанию.
  */
 export function exerciseFlaskFill(
   todaySum: number,
@@ -105,14 +113,14 @@ export function exerciseFlaskFill(
   };
 }
 
-/** Средняя сумма граммов за дни прошлой недели, где была еда */
-export function prevWeekFoodDailyAverage(
+/** Средняя сумма граммов за дни, где была еда */
+export function foodDailyAverage(
   days: Record<string, DayRecord>,
-  prevWeekKeys: string[],
+  dateKeys: string[],
 ): number | null {
   const dailyTotals: number[] = [];
 
-  for (const key of prevWeekKeys) {
+  for (const key of dateKeys) {
     const meals = getDayRecord(asState(days), key).meals;
     if (meals.length > 0) {
       dailyTotals.push(sumMealsDay(meals));
@@ -120,6 +128,14 @@ export function prevWeekFoodDailyAverage(
   }
 
   return mean(dailyTotals);
+}
+
+/** Средняя сумма граммов за дни прошлой недели, где была еда */
+export function prevWeekFoodDailyAverage(
+  days: Record<string, DayRecord>,
+  prevWeekKeys: string[],
+): number | null {
+  return foodDailyAverage(days, prevWeekKeys);
 }
 
 export interface FoodFlaskFill extends FlaskFill {
