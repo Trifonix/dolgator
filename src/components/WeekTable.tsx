@@ -1,8 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  Animated,
-  Easing,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -37,108 +34,28 @@ function isExerciseCell(cell: TableCell | undefined): cell is ExerciseCell {
   return Array.isArray(cell);
 }
 
-/** На native opacity через JS-драйвер на New Arch «проваливается»; на web — наоборот native. */
-const OPACITY_NATIVE = Platform.OS !== 'web';
-/** Еле заметный пульс текущих повторений */
-const PULSE_DIM = 0.88;
-
-function FadeInMiniValue({
+function MiniValue({
   value,
   color,
   style,
-  pulse = false,
-  pulseDelayMs = 0,
 }: {
   value: number | null | undefined;
   color: string;
   style: StyleProp<TextStyle>;
-  pulse?: boolean;
-  pulseDelayMs?: number;
 }) {
-  const hasValue = value != null;
-  const opacity = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
-  const seen = useRef(value);
-  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const had = seen.current != null;
-    const has = value != null;
-
-    function stopPulse(restore = false) {
-      pulseLoop.current?.stop();
-      pulseLoop.current = null;
-      if (restore && has) {
-        opacity.setValue(1);
-      }
-    }
-
-    function startPulse() {
-      if (cancelled || !pulse) return;
-      stopPulse();
-      opacity.setValue(1);
-      const beat = Animated.loop(
-        Animated.sequence([
-          Animated.timing(opacity, {
-            toValue: PULSE_DIM,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: OPACITY_NATIVE,
-          }),
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 1100,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: OPACITY_NATIVE,
-          }),
-        ]),
-      );
-      pulseLoop.current = Animated.sequence([
-        Animated.delay(pulseDelayMs),
-        beat,
-      ]);
-      pulseLoop.current.start();
-    }
-
-    if (!had && has) {
-      opacity.setValue(0);
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 320,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: OPACITY_NATIVE,
-      }).start(({ finished }) => {
-        if (finished && !cancelled) startPulse();
-      });
-    } else if (had && !has) {
-      stopPulse();
-      opacity.setValue(0);
-    } else if (has) {
-      opacity.setValue(1);
-      if (pulse) startPulse();
-      else stopPulse();
-    }
-    seen.current = value;
-
-    return () => {
-      cancelled = true;
-      stopPulse(true);
-    };
-  }, [opacity, pulse, pulseDelayMs, value]);
-
   if (value == null) {
     return <Text style={style} />;
   }
 
   return (
-    <Animated.Text
-      style={[style, { color, opacity }]}
+    <Text
+      style={[style, { color }]}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.6}
     >
       {String(value)}
-    </Animated.Text>
+    </Text>
   );
 }
 
@@ -368,7 +285,7 @@ export function WeekTable({
                           const showActual = value != null;
                           const showGhost = !showActual && ghostValue != null;
                           return (
-                            <FadeInMiniValue
+                            <MiniValue
                               key={miniIdx}
                               value={showActual ? value : showGhost ? ghostValue : null}
                               color={
@@ -382,8 +299,6 @@ export function WeekTable({
                                 styles.exerciseMiniCell,
                                 showActual ? styles.fontCurrent : styles.fontPast,
                               ]}
-                              pulse={showActual}
-                              pulseDelayMs={miniIdx * 160}
                             />
                           );
                         })}
