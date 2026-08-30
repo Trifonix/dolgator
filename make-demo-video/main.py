@@ -546,15 +546,66 @@ def _font(size: int, bold: bool = False):
     return ImageFont.load_default()
 
 
-def _fit_contain(im, tw: int, th: int, bg=BG):
+def _crop_phone_content(im):
+    """Вырезать телефонную рамку из web-скриншота (убрать чёрные поля вокруг)."""
     from PIL import Image
 
-    iw, ih = im.size
-    scale = min(tw / iw, th / ih)
+    rgb = im.convert("RGB")
+    # фон webOuter ~ #050508 — считаем «пустым» всё темнее порога
+    gray = rgb.convert("L")
+    mask = gray.point(lambda p: 255 if p > 18 else 0)
+    bbox = mask.getbbox()
+    if not bbox:
+        return rgb
+    # небольшой запас, чтобы не срезать скруглённую рамку
+    pad = 4
+    l, t, r, b = bbox
+    l = max(0, l - pad)
+    t = max(0, t - pad)
+    r = min(rgb.width, r + pad)
+    b = min(rgb.height, b + pad)
+    cropped = rgb.crop((l, t, r, b))
+    # если кроп почти весь кадр — оставить как есть
+    if cropped.width * cropped.height < rgb.width * rgb.height * 0.08:
+        return rgb
+    return cropped
+
+
+def _fit_phone(im, tw: int, th: int, *, min_height_ratio: float = 0.8, bg=BG):
+    """
+    Вырезать телефон из web-скриншота и растянуть на всю область tw×th
+    (высота >= min_height_ratio, обычно почти 100% APP_H).
+    """
+    from PIL import Image
+
+    phone = _crop_phone_content(im)
+    iw, ih = phone.size
+    # заполняем высоту области приложения целиком
+    target_h = th
+    scale = target_h / ih
     nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
-    im = im.resize((nw, nh), Image.Resampling.LANCZOS)
+    # если шире экрана — cover по ширине с лёгким crop сверху/снизу,
+    # но не меньше min_height_ratio
+    if nw > tw:
+        scale_w = tw / iw
+        if ih * scale_w >= th * min_height_ratio:
+            scale = scale_w
+            nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
+        else:
+            # оставляем scale по высоте и обрезаем по бокам
+            pass
+
+    phone = phone.resize((nw, nh), Image.Resampling.LANCZOS)
     canvas = Image.new("RGB", (tw, th), bg)
-    canvas.paste(im, ((tw - nw) // 2, (th - nh) // 2))
+
+    if nw <= tw and nh <= th:
+        canvas.paste(phone, ((tw - nw) // 2, (th - nh) // 2))
+        return canvas
+
+    left = max(0, (nw - tw) // 2)
+    top = max(0, (nh - th) // 2)
+    phone = phone.crop((left, top, left + min(tw, nw), top + min(th, nh)))
+    canvas.paste(phone, ((tw - phone.width) // 2, (th - phone.height) // 2))
     return canvas
 
 
@@ -604,7 +655,8 @@ def compose_commit_frame(src: Path, dest: Path, date_iso: str, subject: str) -> 
 
     canvas = Image.new("RGB", (WIDTH, HEIGHT), BG)
     shot = Image.open(src).convert("RGB")
-    app = _fit_contain(shot, WIDTH, APP_H)
+    # телефон на всю зону 90% высоты ролика (>= 80% всего кадра)
+    app = _fit_phone(shot, WIDTH, APP_H, min_height_ratio=0.9)
     canvas.paste(app, (0, 0))
 
     draw = ImageDraw.Draw(canvas)
