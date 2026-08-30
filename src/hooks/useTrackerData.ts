@@ -19,6 +19,7 @@ import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils
 import {
   exerciseDailySums,
   exerciseFlaskFill,
+  exerciseSessionAverage,
   foodDailyAverage,
   foodFlaskFill,
   prevWeekExerciseDailySums,
@@ -369,6 +370,12 @@ export function useTrackerData() {
   const prevWeekExerciseTotal = state
     ? sumExerciseWeek(state.days, prevWeekKeys)
     : 0;
+  const weekExerciseSessionAvg = state
+    ? exerciseSessionAverage(state.days, weekKeys) ?? 0
+    : 0;
+  const prevWeekExerciseSessionAvg = state
+    ? exerciseSessionAverage(state.days, prevWeekKeys) ?? 0
+    : 0;
   const weekFoodTotal = state
     ? sumFoodWeek(state.days, weekKeys)
     : 0;
@@ -379,8 +386,8 @@ export function useTrackerData() {
   const weekFoodProjected = state
     ? foodDailyAverage(state.days, weekKeys)
     : null;
-  const weekFoodDailyAvg = weekFoodProjected != null ? Math.round(weekFoodProjected) : 0;
-  const prevWeekFoodDailyAvg = Math.round(prevWeekFoodTotal / 7);
+  const weekFoodDailyAvg = weekFoodProjected != null ? Math.floor(weekFoodProjected) : 0;
+  const prevWeekFoodDailyAvg = Math.floor(prevWeekFoodTotal / 7);
 
   const todayExercises = state
     ? getDayExercises(getDayRecord(state, todayKey))
@@ -482,6 +489,8 @@ export function useTrackerData() {
     foodWeekTargetValue,
     weekExerciseTotal,
     prevWeekExerciseTotal,
+    weekExerciseSessionAvg,
+    prevWeekExerciseSessionAvg,
     weekFoodTotal,
     prevWeekFoodTotal,
     weekFoodDailyAvg,

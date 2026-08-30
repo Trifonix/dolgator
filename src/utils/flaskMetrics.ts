@@ -1,5 +1,5 @@
 import { AppState, DayRecord, ExerciseColumns } from '../types';
-import { getDayExercises, getDayRecord, sumMealsDay } from '../storage/storage';
+import { getDayExercises, getDayRecord, sumExerciseDay, sumMealsDay } from '../storage/storage';
 
 /** Нижняя засечка зоны поддержки (жёлтый диапазон) */
 export const EXERCISE_BAND_LOW = 0.6;
@@ -30,9 +30,9 @@ function mean(values: number[]): number | null {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-function roundMean(values: number[]): number | null {
+function ceilMean(values: number[]): number | null {
   const avg = mean(values);
-  return avg == null ? null : Math.round(avg);
+  return avg == null ? null : Math.ceil(avg);
 }
 
 function asState(days: Record<string, DayRecord>): AppState {
@@ -62,7 +62,7 @@ export function exerciseDailySums(
     }
   }
 
-  return [roundMean(buckets[0]), roundMean(buckets[1]), roundMean(buckets[2])];
+  return [ceilMean(buckets[0]), ceilMean(buckets[1]), ceilMean(buckets[2])];
 }
 
 export function prevWeekExerciseDailySums(
@@ -70,6 +70,22 @@ export function prevWeekExerciseDailySums(
   prevWeekKeys: string[],
 ): [number | null, number | null, number | null] {
   return exerciseDailySums(days, prevWeekKeys);
+}
+
+/**
+ * Средняя сумма повторений за тренировочный день (дни без тренировки не входят).
+ * Прогноз этой недели: как у еды — среднее по уже заполненным дням.
+ */
+export function exerciseSessionAverage(
+  days: Record<string, DayRecord>,
+  dateKeys: string[],
+): number | null {
+  const sessions: number[] = [];
+  for (const key of dateKeys) {
+    const sum = sumExerciseDay(getDayExercises(getDayRecord(asState(days), key)));
+    if (sum > 0) sessions.push(sum);
+  }
+  return ceilMean(sessions);
 }
 
 export interface FlaskFill {

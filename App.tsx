@@ -166,8 +166,8 @@ function AppContent() {
               ghostColumns={ghostExerciseColumns}
               maxRows={MAX_SETS}
               weekCompare={{
-                current: tracker.weekExerciseTotal,
-                previous: tracker.prevWeekExerciseTotal,
+                current: tracker.weekExerciseSessionAvg,
+                previous: tracker.prevWeekExerciseSessionAvg,
               }}
               onTap={() => registerTap('exercise')}
               flex
