@@ -148,23 +148,17 @@ function todayHeaderBackground(): string {
 }
 
 function todayCellLayout(rowIndex: number, maxRows: number): ViewStyle {
-  const base: ViewStyle = {
-    marginHorizontal: 0,
-    borderRadius: 0,
-  };
   if (rowIndex === maxRows - 1) {
     return {
-      ...base,
       borderBottomLeftRadius: 3,
       borderBottomRightRadius: 3,
     };
   }
-  return base;
+  return { borderRadius: 0 };
 }
 
 function todayHeaderLayout(): ViewStyle {
   return {
-    marginHorizontal: 0,
     borderTopLeftRadius: 3,
     borderTopRightRadius: 3,
     borderBottomLeftRadius: 0,
@@ -255,7 +249,7 @@ export function WeekTable({
               <View
                 key={key}
                 style={[
-                  styles.headerCell,
+                  styles.dayCol,
                   isToday && todayHeaderLayout(),
                   !isToday && isWeekend && { backgroundColor: weekendHeaderBackground(variant) },
                   isToday && { backgroundColor: todayHeaderBackground() },
@@ -299,7 +293,7 @@ export function WeekTable({
                   <View
                     key={key}
                     style={[
-                      styles.cell,
+                      styles.dayCol,
                       flex && styles.cellFlex,
                       isToday && todayCellLayout(rowIdx, maxRows),
                       !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
@@ -374,20 +368,14 @@ export function WeekTable({
             <View
               style={[
                 styles.cornerCell,
-                styles.labelCornerSum,
-                {
-                  backgroundColor: labelColumnCellBackground(variant),
-                  borderTopWidth: 1.5,
-                  borderRightWidth: 1.5,
-                  borderLeftWidth: 1.5,
-                  borderBottomWidth: 1.5,
-                  borderTopColor: palette.primary,
-                  borderRightColor: palette.primary,
-                  borderLeftColor: palette.primary,
-                  borderBottomColor: palette.primary,
-                },
+                styles.labelCorner,
+                { backgroundColor: labelColumnCellBackground(variant) },
               ]}
             >
+              <View
+                pointerEvents="none"
+                style={[styles.sumCornerFrame, { borderColor: palette.primary }]}
+              />
               {weekCompare != null && (
                 <View style={styles.weekCompareStack}>
                   <Text
@@ -422,7 +410,6 @@ export function WeekTable({
             {columns.sums.map((sum, colIdx) => {
               const day = weekDays[colIdx];
               const key = dateKey(day);
-              const isFirstCol = colIdx === 0;
               const isToday = key === todayKey;
               const isWeekend = isWeekendColumn(colIdx);
               const ghostSum = ghostColumns?.sums[colIdx] ?? 0;
@@ -432,9 +419,7 @@ export function WeekTable({
                 <View
                   key={key}
                   style={[
-                    styles.cell,
-                    styles.sumCellRight,
-                    isFirstCol && styles.sumCellLeft,
+                    styles.dayCol,
                     flex && styles.cellFlex,
                     !isToday && isWeekend && { backgroundColor: weekendCellBackground(variant) },
                   ]}
@@ -531,12 +516,15 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
+    alignItems: 'stretch',
   },
   rowFlex: {
     flex: 1,
   },
   cornerCell: {
     width: 26,
+    flexGrow: 0,
+    flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -544,20 +532,23 @@ const styles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: colors.border,
   },
-  labelCornerSum: {
-    borderBottomLeftRadius: 3,
+  sumCornerFrame: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 1.5,
+    borderRadius: 3,
   },
   headerRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderRadius: 4,
   },
-  headerCell: {
-    flex: 1,
+  dayCol: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 1,
-    borderRadius: 3,
     alignSelf: 'stretch',
   },
   headerText: {
@@ -574,13 +565,6 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: colors.textMuted,
   },
-  cell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 1,
-    alignSelf: 'stretch',
-  },
   cellFlex: {
     minHeight: 0,
   },
@@ -591,10 +575,14 @@ const styles = StyleSheet.create({
   exerciseMiniRow: {
     flexDirection: 'row',
     width: '100%',
+    minWidth: 0,
     alignItems: 'center',
   },
   exerciseMiniCell: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
     textAlign: 'center',
     fontSize: 8,
     fontVariant: ['tabular-nums'],
@@ -605,14 +593,6 @@ const styles = StyleSheet.create({
   sumRow: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
-  },
-  sumCellRight: {
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: colors.border,
-  },
-  sumCellLeft: {
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: colors.border,
   },
   sumText: {
     fontSize: 9,
