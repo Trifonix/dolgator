@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -29,7 +30,7 @@ export function ConfirmDialog({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType={Platform.OS === 'web' ? 'fade' : 'none'}
       onRequestClose={() => {}}
     >
       <View style={styles.backdrop}>

@@ -130,7 +130,6 @@ export function CounterControl({
       return;
     }
 
-    // active или disabled: серия быстрых тапов → режим удаления на 60 с
     rapidCount.current += 1;
     clearPending();
 
@@ -140,13 +139,13 @@ export function CounterControl({
       return;
     }
 
-    const tapsSoFar = rapidCount.current;
+    if (okMode === 'active' && rapidCount.current === 1) {
+      onValuePress();
+    }
+
     pendingTap.current = setTimeout(() => {
       pendingTap.current = null;
       rapidCount.current = 0;
-      if (okMode === 'active' && tapsSoFar === 1) {
-        onValuePress();
-      }
     }, RAPID_TAP_GAP_MS);
   };
 

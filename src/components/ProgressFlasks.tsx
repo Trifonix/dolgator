@@ -35,7 +35,6 @@ function useFillHeight(ratio: number, maxPx: number) {
 
 const PULSE_HOLD_MS = 3000;
 const PULSE_FLASH_MS = 1000;
-const PULSE_CYCLE_MS = PULSE_HOLD_MS + PULSE_FLASH_MS;
 
 function useSmoothPulse(active: boolean, phaseDelayMs: number) {
   const mix = useRef(new Animated.Value(0)).current;
@@ -45,23 +44,28 @@ function useSmoothPulse(active: boolean, phaseDelayMs: number) {
     mix.setValue(0);
     if (!active) return;
 
-    let raf = 0;
-    const origin = Date.now() + phaseDelayMs;
-
-    const tick = () => {
-      const elapsed = Math.max(0, Date.now() - origin);
-      const t = elapsed % PULSE_CYCLE_MS;
-      if (t < PULSE_HOLD_MS) {
-        mix.setValue(0);
-      } else {
-        const u = (t - PULSE_HOLD_MS) / PULSE_FLASH_MS;
-        mix.setValue(Math.sin(u * Math.PI));
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
+    const flash = Animated.sequence([
+      Animated.timing(mix, {
+        toValue: 1,
+        duration: PULSE_FLASH_MS / 2,
+        easing: Easing.out(Easing.sin),
+        useNativeDriver: false,
+      }),
+      Animated.timing(mix, {
+        toValue: 0,
+        duration: PULSE_FLASH_MS / 2,
+        easing: Easing.in(Easing.sin),
+        useNativeDriver: false,
+      }),
+    ]);
+    const beat = Animated.loop(
+      Animated.sequence([Animated.delay(PULSE_HOLD_MS), flash]),
+    );
+    const run = Animated.sequence([Animated.delay(phaseDelayMs % 500), beat]);
+    run.start();
     return () => {
-      cancelAnimationFrame(raf);
+      run.stop();
+      beat.stop();
       mix.setValue(0);
     };
   }, [active, mix, phaseDelayMs]);
