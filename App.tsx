@@ -179,6 +179,7 @@ function AppContent() {
             <View style={styles.centerColumn}>
               <CounterControl
                 variant="exercise"
+                accentPalette={tracker.exerciseAccent}
                 value={tracker.exerciseCounter}
                 onDecrement={() => tracker.adjustExercise(-1)}
                 onIncrement={() => tracker.adjustExercise(1)}

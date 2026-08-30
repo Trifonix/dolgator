@@ -6,7 +6,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, AccentPalette } from '../theme/colors';
 import {
   CENTER_CTRL_GAP,
   CENTER_CTRL_ROW_WIDTH,
@@ -70,6 +70,8 @@ interface CounterControlProps {
   onArmUndo: () => void;
   okMode: OkMode;
   variant: 'exercise' | 'food';
+  /** Переопределяет палитру variant (для цвета текущего упражнения) */
+  accentPalette?: AccentPalette;
   compact?: boolean;
 }
 
@@ -82,9 +84,11 @@ export function CounterControl({
   onArmUndo,
   okMode,
   variant,
+  accentPalette,
   compact = false,
 }: CounterControlProps) {
-  const palette = variant === 'exercise' ? colors.exercise : colors.food;
+  const palette =
+    accentPalette ?? (variant === 'exercise' ? colors.exercise : colors.food);
   const btnSize = compact ? CENTER_SIDE_BTN : 52;
   const okWidth = compact ? CENTER_OK_WIDTH : 88;
   const okHeight = compact ? CENTER_OK_HEIGHT : 52;

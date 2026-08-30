@@ -49,6 +49,19 @@ export const colors = {
 export const EXERCISE_LABELS = ['ноги', 'грудные', 'спина'] as const;
 /** Подколонки таблицы повторений: ноги / грудные / спина */
 export const EXERCISE_COLUMN_COLORS = ['#e040fb', '#ff5c93', '#7b88ff'] as const;
+
+export type AccentPalette = {
+  primary: string;
+  glow: string;
+  dim: string;
+};
+
+/** Цвета кнопок −/OK/+ по текущему упражнению в тренировочном дне */
+export const EXERCISE_COLUMN_PALETTES: readonly AccentPalette[] = [
+  { primary: '#e040fb', glow: '#ff00ff', dim: '#9c27b0' },
+  { primary: '#ff5c93', glow: '#ff4081', dim: '#c2185b' },
+  { primary: '#7b88ff', glow: '#536dfe', dim: '#3949ab' },
+];
 /** Призрак прошлой недели: три серых, без цветного оттенка */
 export const EXERCISE_COLUMN_GHOST = ['#5a5a66', '#848490', '#b0b0bc'] as const;
 export const MAX_MEALS = 5;

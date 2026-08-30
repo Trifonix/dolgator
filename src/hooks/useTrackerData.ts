@@ -14,7 +14,7 @@ import {
   sumMealsDay,
 } from '../storage/storage';
 import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../types';
-import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
+import { colors, EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
 import {
   exerciseDailySums,
@@ -27,6 +27,7 @@ import {
   todayExerciseSums,
 } from '../utils/flaskMetrics';
 import { needsOnboarding } from '../utils/onboarding';
+import { exerciseCounterAccent } from '../utils/exerciseAccent';
 import { buildPreviousWeekSeed, PREV_WEEK_EXERCISE_COL, PREV_WEEK_FOOD_COL } from '../utils/onboardingSeed';
 import {
   exerciseTargetDailySum,
@@ -457,6 +458,10 @@ export function useTrackerData() {
     ? foodWeekTarget(prevTotals.food)
     : null;
 
+  const exerciseAccent = state
+    ? exerciseCounterAccent(todayExercises, state.currentExerciseIndex)
+    : colors.exercise;
+
   return {
     ready: state !== null,
     needsOnboarding: state ? needsOnboarding(state) : false,
@@ -498,5 +503,6 @@ export function useTrackerData() {
     exerciseFlasks,
     foodFlask,
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
+    exerciseAccent,
   };
 }
