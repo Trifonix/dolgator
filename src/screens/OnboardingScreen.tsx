@@ -59,9 +59,14 @@ const EXERCISE_INTRO_GROUPS: ExtraBlock[] = [
 const EXERCISE_INTRO_P2 =
   'Можно заполнить вручную через − / число / + и OK, либо нажать «Использовать пример» и принять готовый вариант.';
 
-const FOOD_INTRO_TITLE = 'Питание за прошлую неделю';
 const FOOD_INTRO_P1 =
-  'Теперь введите граммы за один день — до 5 приёмов пищи. Например: 250-400-500. Эти данные размажутся по будням прошлой недели с небольшим разбросом ±10–20 г.';
+  'Сейчас нужно ввести примерные граммы за один день (до 5 приёмов пищи), которые вы ели на прошлой неделе:';
+const FOOD_INTRO_GROUPS: ExtraBlock[] = [
+  { text: 'Завтрак (например 250 г)', variant: 'group' },
+  { text: 'Обед (например 400 г)', variant: 'group' },
+  { text: 'Ужин (например 500 г)', variant: 'group' },
+  { text: 'любые другие приёмы — размажутся по будням ±10–20 г', variant: 'note' },
+];
 const FOOD_INTRO_P2 =
   'На этой неделе цель — чуть меньше прошлой: если за прошлую неделю выходило ~7000 г, стремитесь не превышать ~1000 г в день и снижать объём плавно: 6990 → 6980 → 6950…';
 
@@ -266,13 +271,16 @@ function FoodIntroStep({
 }) {
   return (
     <IntroActStep
-      title={FOOD_INTRO_TITLE}
+      title="Питание"
+      titleSecondLine="за прошлую неделю"
+      titleColor={colors.food.primary}
+      groupAccentColor={colors.food.primary}
       paragraph1={FOOD_INTRO_P1}
+      extraBlocks={FOOD_INTRO_GROUPS}
       paragraph2={FOOD_INTRO_P2}
       paragraph2Muted
       buttonLabel="ТАБЛИЦА"
-      accentColor={colors.food.primary}
-      buttonColor={colors.food.dim}
+      darkLabel
       onAction={onContinue}
       onTypingComplete={onTypingComplete}
       canProceed={canContinue}
