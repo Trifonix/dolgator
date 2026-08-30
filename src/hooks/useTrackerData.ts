@@ -16,6 +16,13 @@ import {
 import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../types';
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
+import {
+  exerciseFlaskFill,
+  foodFlaskFill,
+  prevWeekExerciseAvgPerSet,
+  prevWeekFoodDailyAverage,
+  todayExerciseSums,
+} from '../utils/flaskMetrics';
 
 function syncExerciseIndex(state: AppState, todayKey: string): AppState {
   const exercises = getDayExercises(getDayRecord(state, todayKey));
@@ -196,6 +203,35 @@ export function useTrackerData() {
     ? sumFoodWeek(state.days, prevWeekKeys)
     : 0;
 
+  const todayExercises = state
+    ? getDayExercises(getDayRecord(state, todayKey))
+    : EMPTY_EXERCISES;
+  const todaySums = todayExerciseSums(todayExercises);
+  const prevAvgs = state
+    ? prevWeekExerciseAvgPerSet(state.days, prevWeekKeys)
+    : [null, null, null] as const;
+  const fallbackAvgPerSet = state?.lastExerciseRep ?? DEFAULT_STATE.lastExerciseRep;
+  const exerciseFlasks: [
+    ReturnType<typeof exerciseFlaskFill>,
+    ReturnType<typeof exerciseFlaskFill>,
+    ReturnType<typeof exerciseFlaskFill>,
+  ] = [
+    exerciseFlaskFill(todaySums[0], prevAvgs[0], fallbackAvgPerSet),
+    exerciseFlaskFill(todaySums[1], prevAvgs[1], fallbackAvgPerSet),
+    exerciseFlaskFill(todaySums[2], prevAvgs[2], fallbackAvgPerSet),
+  ];
+
+  const todayFoodSum = state
+    ? sumMealsDay(getDayRecord(state, todayKey).meals)
+    : 0;
+  const fallbackFoodDay =
+    (state?.lastMealGrams ?? DEFAULT_STATE.lastMealGrams) * MAX_MEALS;
+  const foodFlask = foodFlaskFill(
+    todayFoodSum,
+    state ? prevWeekFoodDailyAverage(state.days, prevWeekKeys) : null,
+    fallbackFoodDay,
+  );
+
   return {
     ready: state !== null,
     weekDays,
@@ -219,6 +255,8 @@ export function useTrackerData() {
     prevWeekExerciseTotal,
     weekFoodTotal,
     prevWeekFoodTotal,
+    exerciseFlasks,
+    foodFlask,
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
   };
 }

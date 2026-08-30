@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmDialog } from './src/components/ConfirmDialog';
 import { CounterControl } from './src/components/CounterControl';
+import { ExerciseFlasks, FoodFlask } from './src/components/ProgressFlasks';
 import { MobileScreen } from './src/components/MobileScreen';
 import {
   WeekTable,
@@ -158,43 +159,49 @@ function AppContent() {
               onTap={() => registerTap('exercise')}
               flex
             />
-            <CounterControl
-              variant="exercise"
-              value={tracker.exerciseCounter}
-              onDecrement={() => tracker.adjustExercise(-1)}
-              onIncrement={() => tracker.adjustExercise(1)}
-              onValuePress={() => openSubmitDialog('exercise')}
-              submitDisabled={tracker.isExerciseDayFullToday}
-              compact
-            />
           </View>
 
-          <View style={styles.versionRow}>
-            <View style={styles.versionLine} />
-            <Text style={styles.versionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
-              <Text style={styles.versionAppName}>{APP_NAME} </Text>
-              <Text style={styles.versionNumber}>v{APP_VERSION}</Text>
-              <Text style={styles.versionDate}> - {formatLastCommit(LAST_COMMIT_AT)} - </Text>
-              <Text
-                style={styles.versionAuthor}
-                onPress={() => Linking.openURL(DEVELOPER_URL)}
-              >
-                {DEVELOPER_NAME}
-              </Text>
-            </Text>
-            <View style={styles.versionLine} />
+          <View style={styles.centerBand}>
+            <ExerciseFlasks fills={tracker.exerciseFlasks} />
+            <View style={styles.centerColumn}>
+              <CounterControl
+                variant="exercise"
+                value={tracker.exerciseCounter}
+                onDecrement={() => tracker.adjustExercise(-1)}
+                onIncrement={() => tracker.adjustExercise(1)}
+                onValuePress={() => openSubmitDialog('exercise')}
+                submitDisabled={tracker.isExerciseDayFullToday}
+                compact
+              />
+              <View style={styles.versionRow}>
+                <View style={styles.versionLine} />
+                <Text style={styles.versionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  <Text style={styles.versionAppName}>{APP_NAME} </Text>
+                  <Text style={styles.versionNumber}>v{APP_VERSION}</Text>
+                  <Text style={styles.versionDate}> - {formatLastCommit(LAST_COMMIT_AT)} - </Text>
+                  <Text
+                    style={styles.versionAuthor}
+                    onPress={() => Linking.openURL(DEVELOPER_URL)}
+                  >
+                    {DEVELOPER_NAME}
+                  </Text>
+                </Text>
+                <View style={styles.versionLine} />
+              </View>
+              <CounterControl
+                variant="food"
+                value={tracker.foodCounter}
+                onDecrement={() => tracker.adjustFood(-10)}
+                onIncrement={() => tracker.adjustFood(10)}
+                onValuePress={() => openSubmitDialog('food')}
+                submitDisabled={tracker.isFoodDayFullToday}
+                compact
+              />
+            </View>
+            <FoodFlask fill={tracker.foodFlask} />
           </View>
 
           <View style={styles.half}>
-            <CounterControl
-              variant="food"
-              value={tracker.foodCounter}
-              onDecrement={() => tracker.adjustFood(-10)}
-              onIncrement={() => tracker.adjustFood(10)}
-              onValuePress={() => openSubmitDialog('food')}
-              submitDisabled={tracker.isFoodDayFullToday}
-              compact
-            />
             <WeekTable
               variant="food"
               weekDays={tracker.weekDays}
@@ -242,14 +249,25 @@ const styles = StyleSheet.create({
   half: {
     flex: 1,
     overflow: 'hidden',
-    justifyContent: 'space-between',
-    gap: GAP,
+  },
+  centerBand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: GAP,
+  },
+  centerColumn: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    gap: 4,
   },
   versionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: GAP,
-    gap: 8,
+    marginVertical: 0,
+    gap: 6,
   },
   versionLine: {
     flex: 1,

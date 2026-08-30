@@ -2,7 +2,7 @@
 
 Минималистичный счётчик повторений в упражнениях и граммов пищи. Личное приложение без сервера — все данные хранятся на телефоне.
 
-**Версия:** 0.1.6 · **Разработчик:** [Trifonix](https://t.me/trifonixwebsites)
+**Версия:** 0.1.10 · **Разработчик:** [Trifonix](https://t.me/trifonixwebsites)
 
 ![Эскиз интерфейса](main-screen.png)
 
@@ -66,6 +66,11 @@ npm run build:apk:local
 
 ## Как пользоваться
 
+### Колбы (центр)
+
+- **Слева (колба на 3 канала)** — ноги / грудь / спина в одном сосуде фиксированной высоты. Засечки снаружи — эталон 80% (прошлый средний подход × 5, иначе шаг счётчика × 5).
+- **Справа (еда)** — верх = среднесуточная прошлой недели, иначе 5 × шаг граммов. Засечки снаружи — на 1,5% ниже потолка.
+
 ### Упражнения (верх — фиолетовый)
 
 1. **− / +** — выставить повторения
@@ -94,9 +99,10 @@ dolgator/
 ├── app.json              # Expo / EAS
 ├── eas.json              # профили сборки (preview = APK)
 ├── src/
-│   ├── components/       # WeekTable, CounterControl, …
+│   ├── components/       # WeekTable, CounterControl, ProgressFlasks
 │   ├── hooks/            # useTrackerData, useTableGestures
 │   ├── storage/          # AsyncStorage
+│   ├── utils/            # dates, flaskMetrics
 │   ├── screens/          # ChangelogScreen
 │   ├── theme/
 │   ├── types/
