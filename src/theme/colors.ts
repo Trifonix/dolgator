@@ -18,6 +18,13 @@ export const colors = {
     text: '#80deea',
   },
 
+  /** Стартовые intro-экраны (не упражнения и не еда) */
+  intro: {
+    primary: '#ffd54f',
+    dim: '#c6a01e',
+    text: '#ffe082',
+  },
+
   text: '#e8e8f0',
   textMuted: '#8888a0',
   compareGood: '#66bb6a',

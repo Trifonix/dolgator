@@ -78,7 +78,8 @@ function IntroActStep({
   paragraph2Muted = false,
   extraBlocks,
   buttonLabel,
-  buttonColor,
+  accentColor = colors.intro.primary,
+  buttonColor = colors.intro.dim,
   onAction,
   onTypingComplete,
   canProceed,
@@ -90,6 +91,7 @@ function IntroActStep({
   paragraph2Muted?: boolean;
   extraBlocks?: ExtraBlock[];
   buttonLabel: string;
+  accentColor?: string;
   buttonColor?: string;
   onAction: () => void;
   onTypingComplete: () => void;
@@ -107,11 +109,8 @@ function IntroActStep({
     <View style={styles.introInner}>
       <TypewriterText
         text={title}
-        style={
-          buttonColor
-            ? [styles.leadCenter, { color: buttonColor }]
-            : styles.leadCenter
-        }
+        style={[styles.leadCenter, { color: accentColor }]}
+        cursorColor={accentColor}
         speed={42}
         active
         onComplete={() => setTitleDone(true)}
@@ -119,6 +118,7 @@ function IntroActStep({
       <TypewriterText
         text={paragraph1}
         style={styles.paragraphCenter}
+        cursorColor={accentColor}
         speed={22}
         active={titleDone}
         onComplete={() => setP1Done(true)}
@@ -130,12 +130,14 @@ function IntroActStep({
             key={block.text}
             style={[
               block.variant === 'note' ? styles.noteBlock : styles.groupBlock,
+              block.variant !== 'note' && { borderLeftColor: accentColor },
               !blockActive && styles.reservedHidden,
             ]}
           >
             <TypewriterText
               text={block.text}
               style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}
+              cursorColor={accentColor}
               speed={28}
               active={blockActive}
               onComplete={() => setBlockDone((n) => Math.max(n, idx + 1))}
@@ -146,7 +148,7 @@ function IntroActStep({
       <Pressable
         style={[
           styles.introPrimaryBtn,
-          buttonColor ? { backgroundColor: buttonColor } : null,
+          { backgroundColor: buttonColor },
           (!showControls || !canProceed || busy) && styles.primaryBtnDisabled,
           !showControls && styles.introPrimaryBtnHidden,
         ]}
@@ -160,6 +162,7 @@ function IntroActStep({
       <TypewriterText
         text={paragraph2}
         style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}
+        cursorColor={accentColor}
         speed={22}
         active={showControls}
         onComplete={onTypingComplete}
@@ -238,6 +241,7 @@ function FoodIntroStep({
       paragraph2={FOOD_INTRO_P2}
       paragraph2Muted
       buttonLabel="ТАБЛИЦА"
+      accentColor={colors.food.primary}
       buttonColor={colors.food.dim}
       onAction={onContinue}
       onTypingComplete={onTypingComplete}
@@ -636,7 +640,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
-              <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
+              <Text style={[styles.leadCenter, { color: colors.exercise.primary }]}>
+                Прошлая неделя — повторения
+              </Text>
               <Text style={styles.hintCenter}>
                 Сейчас: {FILL_BTN_LABELS[exerciseIndex]} ·{' '}
                 {currentExerciseReady
@@ -864,7 +870,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 28,
     borderRadius: 10,
-    backgroundColor: colors.exercise.dim,
+    backgroundColor: colors.intro.dim,
     alignItems: 'center',
     marginVertical: GAP * 0.25,
   },
@@ -875,7 +881,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   leadCenter: {
-    color: colors.exercise.primary,
+    color: colors.intro.primary,
     fontSize: 20,
     fontWeight: '800',
     lineHeight: 28,
@@ -897,7 +903,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     backgroundColor: colors.bgCard,
     borderLeftWidth: 3,
-    borderLeftColor: colors.exercise.primary,
+    borderLeftColor: colors.intro.primary,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -923,7 +929,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   lead: {
-    color: colors.exercise.primary,
+    color: colors.intro.primary,
     fontSize: 17,
     fontWeight: '800',
     lineHeight: 24,

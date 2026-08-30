@@ -9,6 +9,7 @@ interface TypewriterTextProps {
   speed?: number;
   /** начать набор */
   active?: boolean;
+  cursorColor?: string;
   onComplete?: () => void;
 }
 
@@ -21,6 +22,7 @@ export function TypewriterText({
   style,
   speed = 26,
   active = true,
+  cursorColor = colors.intro.primary,
   onComplete,
 }: TypewriterTextProps) {
   const [length, setLength] = useState(0);
@@ -74,7 +76,7 @@ export function TypewriterText({
       <Text style={[style, styles.measure]}>{text}</Text>
       <Text style={[style, styles.overlay]}>
         {active ? text.slice(0, length) : ''}
-        {active && !done ? <Text style={styles.cursor}>|</Text> : null}
+        {active && !done ? <Text style={[styles.cursor, { color: cursorColor }]}>|</Text> : null}
       </Text>
     </View>
   );
@@ -95,7 +97,6 @@ const styles = StyleSheet.create({
     top: 0,
   },
   cursor: {
-    color: colors.exercise.primary,
     opacity: 0.85,
   },
 });
