@@ -104,6 +104,10 @@ export function CounterControl({
         ? UNDO_OK
         : palette.primary;
 
+  const sideDisabled = okMode === 'disabled';
+  const sideColor = sideDisabled ? colors.textMuted : palette.primary;
+  const sideBorder = sideDisabled ? colors.border : palette.primary;
+
   const clearPending = () => {
     if (pendingTap.current) {
       clearTimeout(pendingTap.current);
@@ -150,20 +154,22 @@ export function CounterControl({
       <View style={[styles.row, compact && styles.rowCompact]}>
         <Pressable
           onPress={onDecrement}
+          disabled={sideDisabled}
           style={({ pressed }) => [
             styles.btn,
             {
               width: btnSize,
               height: btnSize,
               borderRadius: btnSize / 2,
-              borderColor: palette.primary,
+              borderColor: sideBorder,
               shadowColor: palette.glow,
             },
-            pressed && styles.btnPressed,
+            sideDisabled && styles.btnDisabled,
+            !sideDisabled && pressed && styles.btnPressed,
           ]}
           hitSlop={6}
         >
-          <SideSymbol kind="minus" color={palette.primary} btnSize={btnSize} />
+          <SideSymbol kind="minus" color={sideColor} btnSize={btnSize} />
         </Pressable>
 
         <Pressable
@@ -193,20 +199,22 @@ export function CounterControl({
 
         <Pressable
           onPress={onIncrement}
+          disabled={sideDisabled}
           style={({ pressed }) => [
             styles.btn,
             {
               width: btnSize,
               height: btnSize,
               borderRadius: btnSize / 2,
-              borderColor: palette.primary,
+              borderColor: sideBorder,
               shadowColor: palette.glow,
             },
-            pressed && styles.btnPressed,
+            sideDisabled && styles.btnDisabled,
+            !sideDisabled && pressed && styles.btnPressed,
           ]}
           hitSlop={6}
         >
-          <SideSymbol kind="plus" color={palette.primary} btnSize={btnSize} />
+          <SideSymbol kind="plus" color={sideColor} btnSize={btnSize} />
         </Pressable>
       </View>
     </View>
@@ -248,6 +256,11 @@ const styles = StyleSheet.create({
   btnPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.95 }],
+  },
+  btnDisabled: {
+    opacity: 0.45,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   symbolBox: {
     alignItems: 'center',
