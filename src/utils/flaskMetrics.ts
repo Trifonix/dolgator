@@ -8,8 +8,19 @@ export const EXERCISE_MARK_RATIO = 0.8;
 /** Цель по еде: на столько меньше прошлой среднесуточной */
 export const FOOD_REDUCTION = 0.015;
 
-/** С этой доли эталона субстанция начинает мигать */
-export const WARN_START = 0.75;
+export type FlaskKind = 'exercise' | 'food';
+
+/** Акцент мигания по высоте заливки колбы */
+export function flaskPulseAccent(kind: FlaskKind, fillRatio: number): string {
+  if (kind === 'exercise') {
+    if (fillRatio >= 0.8) return '#66bb6a';
+    if (fillRatio >= 0.6) return '#ffd54f';
+    return '#ef5350';
+  }
+  if (fillRatio >= 0.98) return '#ef5350';
+  if (fillRatio >= 0.9) return '#ffd54f';
+  return '#66bb6a';
+}
 
 function mean(values: number[]): number | null {
   if (values.length === 0) return null;
@@ -49,18 +60,6 @@ export interface FlaskFill {
   /** 0…1, положение черты (снизу) */
   markRatio: number;
   hasBaseline: boolean;
-}
-
-export function approachingWarn(fill: FlaskFill): { active: boolean; intensity: number } {
-  if (!fill.hasBaseline || fill.markRatio <= 0 || fill.fillRatio <= 0) {
-    return { active: false, intensity: 0 };
-  }
-  const towardMark = fill.fillRatio / fill.markRatio;
-  if (towardMark < WARN_START) return { active: false, intensity: 0 };
-  return {
-    active: true,
-    intensity: Math.min(1, (towardMark - WARN_START) / (1 - WARN_START)),
-  };
 }
 
 function firstPositive(...values: Array<number | null | undefined>): number | null {

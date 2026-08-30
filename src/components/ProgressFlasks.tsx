@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import {
   FLASK_EXERCISE_WIDTH,
   FLASK_FOOD_WIDTH,
   FLASK_HEIGHT,
 } from '../theme/layout';
-import { approachingWarn, type FlaskFill, type FoodFlaskFill } from '../utils/flaskMetrics';
+import { flaskPulseAccent, type FlaskFill, type FlaskKind, type FoodFlaskFill } from '../utils/flaskMetrics';
 
 const TICK_GUTTER = 6;
 const PX = 2;
@@ -32,39 +32,64 @@ function useFillHeight(ratio: number, maxPx: number) {
   });
 }
 
-function useWarnPulse(active: boolean, intensity: number) {
-  const opacity = useRef(new Animated.Value(1)).current;
+function useSmoothPulse(active: boolean) {
+  const mix = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!active) {
-      opacity.stopAnimation();
-      opacity.setValue(1);
+      mix.stopAnimation();
+      mix.setValue(0);
       return;
     }
 
-    const half = Math.round(520 - intensity * 260);
+    const ease = Easing.inOut(Easing.sin);
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.32,
-          duration: half,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
+        Animated.timing(mix, {
           toValue: 1,
-          duration: half,
-          useNativeDriver: true,
+          duration: 1800,
+          easing: ease,
+          useNativeDriver: false,
+        }),
+        Animated.timing(mix, {
+          toValue: 0,
+          duration: 1800,
+          easing: ease,
+          useNativeDriver: false,
         }),
       ]),
     );
     loop.start();
     return () => {
       loop.stop();
-      opacity.setValue(1);
+      mix.setValue(0);
     };
-  }, [active, intensity, opacity]);
+  }, [active, mix]);
 
-  return opacity;
+  return mix;
+}
+
+function PulseLiquid({
+  kind,
+  fillRatio,
+  height,
+}: {
+  kind: FlaskKind;
+  fillRatio: number;
+  height: Animated.AnimatedInterpolation<string | number>;
+}) {
+  const mix = useSmoothPulse(fillRatio > 0);
+  const accent = flaskPulseAccent(kind, fillRatio);
+  const backgroundColor = mix.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.flaskLiquid, accent],
+  });
+
+  return (
+    <Animated.View style={[styles.liquid, { height }]}>
+      <Animated.View style={[styles.liquidFill, { backgroundColor }]} />
+    </Animated.View>
+  );
 }
 
 function SideNotch({
@@ -105,22 +130,13 @@ function SideNotch({
 function ChamberLiquid({ fill }: { fill: FlaskFill }) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
-  const warn = approachingWarn(fill);
-  const pulse = useWarnPulse(warn.active, warn.intensity);
 
   return (
     <View
       style={styles.chamber}
       onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
     >
-      <Animated.View style={[styles.liquid, { height: fillHeight }]}>
-        <Animated.View
-          style={[
-            styles.liquidFill,
-            { backgroundColor: colors.flaskLiquid, opacity: pulse },
-          ]}
-        />
-      </Animated.View>
+      <PulseLiquid kind="exercise" fillRatio={fill.fillRatio} height={fillHeight} />
     </View>
   );
 }
@@ -159,8 +175,6 @@ interface FoodFlaskProps {
 export function FoodFlask({ fill }: FoodFlaskProps) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
-  const warn = approachingWarn(fill);
-  const pulse = useWarnPulse(warn.active, warn.intensity);
 
   return (
     <View style={styles.foodWrap}>
@@ -173,14 +187,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
         ]}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
-        <Animated.View style={[styles.liquid, { height: fillHeight }]}>
-          <Animated.View
-            style={[
-              styles.liquidFill,
-              { backgroundColor: colors.flaskLiquid, opacity: pulse },
-            ]}
-          />
-        </Animated.View>
+        <PulseLiquid kind="food" fillRatio={fill.fillRatio} height={fillHeight} />
       </View>
     </View>
   );

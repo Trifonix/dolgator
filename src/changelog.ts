@@ -7,6 +7,13 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.15',
+    date: '2026-08-30',
+    items: [
+      'Плавное мигание заливки: повторы красный→жёлтый→зелёный, еда зелёный→жёлтый→красный',
+    ],
+  },
+  {
     version: '0.1.14',
     date: '2026-08-30',
     items: [
