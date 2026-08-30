@@ -1,6 +1,6 @@
 import { getDayExercises, getDayRecord, sumExerciseDay, sumFoodWeek, sumMealsDay } from '../storage/storage';
 import { AppState, DayRecord } from '../types';
-import { exerciseAvgPerSet, foodDailyAverage } from './flaskMetrics';
+import { foodDailyAverage, exerciseDailySums } from './flaskMetrics';
 
 /** Снижение недельной нормы питания: ~10 г + 0,15 % от прошлой недели */
 export function foodWeekTarget(prevWeekTotal: number): number {
@@ -21,19 +21,12 @@ export function exerciseWeekTarget(prevWeekTotal: number): number {
   return Math.round(prevWeekTotal * 1.03);
 }
 
-/** Средний подход × упражнение с учётом цели роста на текущую неделю */
-export function exerciseTargetAvgPerSet(
+/** Типичная дневная сумма подходов за прошлую неделю — черта колбы «удержать сумму» */
+export function exerciseTargetDailySum(
   days: Record<string, DayRecord>,
   prevWeekKeys: string[],
-  prevWeekTotal: number,
 ): [number | null, number | null, number | null] {
-  const prevAvgs = exerciseAvgPerSet(days, prevWeekKeys);
-  if (prevWeekTotal <= 0) return prevAvgs;
-
-  const ratio = exerciseWeekTarget(prevWeekTotal) / prevWeekTotal;
-  return prevAvgs.map((avg) =>
-    avg != null && avg > 0 ? avg * ratio : avg,
-  ) as [number | null, number | null, number | null];
+  return exerciseDailySums(days, prevWeekKeys);
 }
 
 export function prevWeekTotals(state: AppState, prevWeekKeys: string[]) {

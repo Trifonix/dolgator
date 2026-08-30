@@ -17,11 +17,11 @@ import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../ty
 import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
 import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
 import {
-  exerciseAvgPerSet,
+  exerciseDailySums,
   exerciseFlaskFill,
   foodDailyAverage,
   foodFlaskFill,
-  prevWeekExerciseAvgPerSet,
+  prevWeekExerciseDailySums,
   prevWeekFoodDailyAverage,
   todayExerciseSums,
 } from '../utils/flaskMetrics';
@@ -29,7 +29,7 @@ import { needsOnboarding } from '../utils/onboarding';
 import { buildPreviousWeekSeed, PREV_WEEK_EXERCISE_COL, PREV_WEEK_FOOD_COL } from '../utils/onboardingSeed';
 import {
   currentFoodDailyTarget,
-  exerciseTargetAvgPerSet,
+  exerciseTargetDailySum,
   foodWeekTarget,
   prevWeekTotals,
 } from '../utils/weeklyTargets';
@@ -381,20 +381,21 @@ export function useTrackerData() {
     ? getDayExercises(getDayRecord(state, todayKey))
     : EMPTY_EXERCISES;
   const todaySums = todayExerciseSums(todayExercises);
-  const prevAvgs = state
-    ? prevWeekExerciseAvgPerSet(state.days, prevWeekKeys)
+  const prevDailySums = state
+    ? prevWeekExerciseDailySums(state.days, prevWeekKeys)
     : [null, null, null] as const;
   const prevTotals = state ? prevWeekTotals(state, prevWeekKeys) : { food: 0, exercise: 0 };
-  const targetAvgs = state
-    ? exerciseTargetAvgPerSet(state.days, prevWeekKeys, prevTotals.exercise)
+  const targetDailySums = state
+    ? exerciseTargetDailySum(state.days, prevWeekKeys)
     : [null, null, null] as const;
-  const exerciseBaselines = state?.onboardingCompleted ? targetAvgs : prevAvgs;
-  const weekAvgsExclToday = state
-    ? exerciseAvgPerSet(
+  const exerciseBaselines = state?.onboardingCompleted ? targetDailySums : prevDailySums;
+  const weekDailySumsExclToday = state
+    ? exerciseDailySums(
         state.days,
         weekKeys.filter((key) => key !== todayKey),
       )
     : [null, null, null] as const;
+  const fallbackDayVolume = DEFAULT_STATE.lastExerciseRep * MAX_SETS;
   const exerciseFlasks: [
     ReturnType<typeof exerciseFlaskFill>,
     ReturnType<typeof exerciseFlaskFill>,
@@ -403,17 +404,17 @@ export function useTrackerData() {
     exerciseFlaskFill(
       todaySums[0],
       exerciseBaselines[0],
-      weekAvgsExclToday[0] ?? DEFAULT_STATE.lastExerciseRep,
+      weekDailySumsExclToday[0] ?? fallbackDayVolume,
     ),
     exerciseFlaskFill(
       todaySums[1],
       exerciseBaselines[1],
-      weekAvgsExclToday[1] ?? DEFAULT_STATE.lastExerciseRep,
+      weekDailySumsExclToday[1] ?? fallbackDayVolume,
     ),
     exerciseFlaskFill(
       todaySums[2],
       exerciseBaselines[2],
-      weekAvgsExclToday[2] ?? DEFAULT_STATE.lastExerciseRep,
+      weekDailySumsExclToday[2] ?? fallbackDayVolume,
     ),
   ];
 

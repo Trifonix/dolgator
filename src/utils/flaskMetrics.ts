@@ -1,5 +1,4 @@
 import { AppState, DayRecord, ExerciseColumns } from '../types';
-import { MAX_SETS } from '../theme/colors';
 import { getDayExercises, getDayRecord, sumMealsDay } from '../storage/storage';
 
 /** Нижняя засечка зоны поддержки (жёлтый диапазон) */
@@ -31,12 +30,24 @@ function mean(values: number[]): number | null {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+function roundMean(values: number[]): number | null {
+  const avg = mean(values);
+  return avg == null ? null : Math.round(avg);
+}
+
 function asState(days: Record<string, DayRecord>): AppState {
   return { days } as AppState;
 }
 
-/** Среднее повторений в подходе за набор дней (ноги / грудные / спина) */
-export function exerciseAvgPerSet(
+export function sumExerciseColumn(column: number[]): number {
+  return column.reduce((a, b) => a + b, 0);
+}
+
+/**
+ * Типичная дневная сумма подходов (ноги / грудные / спина) — целое.
+ * Дни без подходов в упражнении не входят в среднее.
+ */
+export function exerciseDailySums(
   days: Record<string, DayRecord>,
   dateKeys: string[],
 ): [number | null, number | null, number | null] {
@@ -45,23 +56,20 @@ export function exerciseAvgPerSet(
   for (const key of dateKeys) {
     const exercises = getDayExercises(getDayRecord(asState(days), key));
     for (let i = 0; i < 3; i++) {
-      buckets[i].push(...exercises[i]);
+      if (exercises[i].length > 0) {
+        buckets[i].push(sumExerciseColumn(exercises[i]));
+      }
     }
   }
 
-  return [mean(buckets[0]), mean(buckets[1]), mean(buckets[2])];
+  return [roundMean(buckets[0]), roundMean(buckets[1]), roundMean(buckets[2])];
 }
 
-/** Среднее повторений в подходе за прошлую неделю (ноги / грудные / спина) */
-export function prevWeekExerciseAvgPerSet(
+export function prevWeekExerciseDailySums(
   days: Record<string, DayRecord>,
   prevWeekKeys: string[],
 ): [number | null, number | null, number | null] {
-  return exerciseAvgPerSet(days, prevWeekKeys);
-}
-
-export function sumExerciseColumn(column: number[]): number {
-  return column.reduce((a, b) => a + b, 0);
+  return exerciseDailySums(days, prevWeekKeys);
 }
 
 export interface FlaskFill {
@@ -82,17 +90,17 @@ function firstPositive(...values: Array<number | null | undefined>): number | nu
 }
 
 /**
- * Сегодняшняя сумма подходов vs эталон.
- * Черта (80%) = средний подход × 5. Полная колба = эталон / 0.8 (запас +25%).
- * Без прошлой недели — среднее по другим дням текущей недели или значение по умолчанию.
+ * Сегодняшняя сумма подходов vs эталон дня.
+ * Черта (80%) = типичная сумма за день прошлой недели (6+6+7+7+11 → 37).
+ * Полная колба = эталон / 0.8. Чуть выше черты = +1–2 повторения.
  */
 export function exerciseFlaskFill(
   todaySum: number,
-  prevAvgPerSet: number | null,
-  fallbackAvgPerSet = 0,
+  prevDailySum: number | null,
+  fallbackDailySum = 0,
 ): FlaskFill {
-  const avg = firstPositive(prevAvgPerSet, fallbackAvgPerSet);
-  if (avg == null) {
+  const targetVolume = firstPositive(prevDailySum, fallbackDailySum);
+  if (targetVolume == null) {
     return {
       fillRatio: 0,
       overflowRatio: 0,
@@ -101,7 +109,6 @@ export function exerciseFlaskFill(
     };
   }
 
-  const targetVolume = avg * MAX_SETS;
   const fullVolume = targetVolume / EXERCISE_MARK_RATIO;
   const raw = todaySum / fullVolume;
 
