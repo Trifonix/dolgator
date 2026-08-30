@@ -8,6 +8,7 @@ import {
   TextStyle,
   View,
   ViewStyle,
+  type StyleProp,
 } from 'react-native';
 import { colors, EXERCISE_COLUMN_COLORS, EXERCISE_COLUMN_GHOST } from '../theme/colors';
 import { getDayOfMonth } from '../utils/dates';
@@ -38,33 +39,81 @@ function FadeInMiniValue({
   value,
   color,
   style,
+  pulse = false,
+  pulseDelayMs = 0,
 }: {
   value: number | null | undefined;
   color: string;
-  style: TextStyle;
+  style: StyleProp<TextStyle>;
+  pulse?: boolean;
+  pulseDelayMs?: number;
 }) {
   const hasValue = value != null;
   const opacity = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
   const seen = useRef(value);
+  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const had = seen.current != null;
     const has = value != null;
+
+    function stopPulse() {
+      pulseLoop.current?.stop();
+      pulseLoop.current = null;
+    }
+
+    function startPulse() {
+      if (cancelled || !pulse) return;
+      stopPulse();
+      const beat = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, {
+            toValue: 0.8,
+            duration: 900,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: false,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 900,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: false,
+          }),
+        ]),
+      );
+      pulseLoop.current = Animated.sequence([
+        Animated.delay(pulseDelayMs),
+        beat,
+      ]);
+      pulseLoop.current.start();
+    }
+
     if (!had && has) {
       opacity.setValue(0);
       Animated.timing(opacity, {
         toValue: 1,
         duration: 320,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
+        useNativeDriver: false,
+      }).start(({ finished }) => {
+        if (finished && !cancelled) startPulse();
+      });
     } else if (had && !has) {
+      stopPulse();
       opacity.setValue(0);
     } else if (has) {
       opacity.setValue(1);
+      if (pulse) startPulse();
+      else stopPulse();
     }
     seen.current = value;
-  }, [opacity, value]);
+
+    return () => {
+      cancelled = true;
+      stopPulse();
+    };
+  }, [opacity, pulse, pulseDelayMs, value]);
 
   if (value == null) {
     return <Text style={style} />;
@@ -276,7 +325,12 @@ export function WeekTable({
                                     ? EXERCISE_COLUMN_GHOST[miniIdx]
                                     : colors.textMuted
                               }
-                              style={styles.exerciseMiniCell}
+                              style={[
+                                styles.exerciseMiniCell,
+                                { fontWeight: showActual ? '700' : '400' },
+                              ]}
+                              pulse={showActual}
+                              pulseDelayMs={miniIdx * 280}
                             />
                           );
                         })}
@@ -538,7 +592,6 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 8,
-    fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   foodCellText: {
