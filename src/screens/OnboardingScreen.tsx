@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
+  LayoutChangeEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -303,6 +304,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const tableScale = useRef(new Animated.Value(1)).current;
   const tableOpacity = useRef(new Animated.Value(1)).current;
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workAreaH = useRef(0);
+  const tableLayout = useRef({ y: 0, height: 100 });
 
   useEffect(() => {
     if (INTRO_ACTS.includes(step)) {
@@ -363,30 +366,53 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     ]).start(fadeIn);
   }, [introOpacity, introSlide]);
 
+  const pulseTableUpdate = useCallback(() => {
+    tableOpacity.setValue(1);
+    Animated.sequence([
+      Animated.timing(tableOpacity, {
+        toValue: 0.25,
+        duration: 160,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(tableOpacity, {
+        toValue: 1,
+        duration: 520,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [tableOpacity]);
+
   const playTableReveal = useCallback((onDone: () => void) => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    setTableReveal(true);
+
+    const { y, height } = tableLayout.current;
+    const areaH = workAreaH.current || 640;
+    const delta = areaH / 2 - (y + height / 2);
+
     chromeOpacity.setValue(1);
-    tableShift.setValue(48);
+    tableShift.setValue(0);
     tableScale.setValue(1);
     tableOpacity.setValue(1);
+    setTableReveal(true);
 
     Animated.parallel([
       Animated.timing(chromeOpacity, {
         toValue: 0,
-        duration: 480,
+        duration: 560,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(tableShift, {
-        toValue: 0,
-        duration: 720,
-        easing: Easing.out(Easing.cubic),
+        toValue: delta,
+        duration: 820,
+        easing: Easing.inOut(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(tableScale, {
-        toValue: 1.06,
-        duration: 720,
+        toValue: 1.05,
+        duration: 820,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -395,7 +421,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     revealTimerRef.current = setTimeout(() => {
       Animated.timing(tableOpacity, {
         toValue: 0,
-        duration: 420,
+        duration: 450,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }).start(() => {
@@ -406,8 +432,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         tableOpacity.setValue(1);
         onDone();
       });
-    }, 2600);
+    }, 2800);
   }, [chromeOpacity, tableShift, tableScale, tableOpacity]);
+
+  const onWorkAreaLayout = useCallback((e: LayoutChangeEvent) => {
+    workAreaH.current = e.nativeEvent.layout.height;
+  }, []);
+
+  const onTableLayout = useCallback((e: LayoutChangeEvent) => {
+    const { y, height } = e.nativeEvent.layout;
+    tableLayout.current = { y, height };
+  }, []);
 
   const prevWeekDays = useMemo(
     () => getPreviousWeekDays(getCurrentWeekDays()),
@@ -492,10 +527,16 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       setExerciseIndex(nextIdx);
       const example = DEFAULT_ONBOARDING_EXERCISE[nextIdx];
       setExerciseCounter(example[0] ?? 5);
+      pulseTableUpdate();
       return;
     }
 
-    playTableReveal(() => goToStep('food-intro', { skipFadeOut: true }));
+    pulseTableUpdate();
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        playTableReveal(() => goToStep('food-intro', { skipFadeOut: true }));
+      }, 560);
+    });
   }, [
     exerciseDraft,
     exerciseIndex,
@@ -503,6 +544,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     tableReveal,
     playTableReveal,
     goToStep,
+    pulseTableUpdate,
   ]);
 
   const finishFoodStep = useCallback(async (extraMeals?: number[][]) => {
@@ -527,12 +569,24 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
     const extra = Array.from({ length: 6 }, () => randomizeExampleMeals());
     setConfirmedMealDays(extra);
-    playTableReveal(() => {
-      // Короткий fade контейнера перед выходом на главный экран
-      introOpacity.setValue(0);
-      void finishFoodStep(extra);
+    pulseTableUpdate();
+    // Дать таблице отрисовать новые дни, затем reveal в центр
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        playTableReveal(() => {
+          introOpacity.setValue(0);
+          void finishFoodStep(extra);
+        });
+      }, 560);
     });
-  }, [tableReveal, mealsDraft.length, playTableReveal, finishFoodStep, introOpacity]);
+  }, [
+    tableReveal,
+    mealsDraft.length,
+    playTableReveal,
+    finishFoodStep,
+    introOpacity,
+    pulseTableUpdate,
+  ]);
 
   const renderIntroAct = () => {
     if (step === 'welcome') {
@@ -574,13 +628,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'exercise':
         return (
-          <View style={[styles.workInner, tableReveal && styles.workInnerReveal]}>
+          <View
+            style={styles.workInner}
+            onLayout={onWorkAreaLayout}
+          >
             <Animated.View
-              style={[
-                styles.chromeBlock,
-                tableReveal && styles.chromeOverlayTop,
-                { opacity: chromeOpacity },
-              ]}
+              style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
@@ -593,6 +646,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </Animated.View>
 
             <Animated.View
+              onLayout={onTableLayout}
               style={[
                 styles.tableWrapCompact,
                 {
@@ -611,11 +665,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </Animated.View>
 
             <Animated.View
-              style={[
-                styles.chromeBlock,
-                tableReveal && styles.chromeOverlayBottom,
-                { opacity: chromeOpacity },
-              ]}
+              style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <CounterControl
@@ -653,13 +703,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'food':
         return (
-          <View style={[styles.workInner, tableReveal && styles.workInnerReveal]}>
+          <View
+            style={styles.workInner}
+            onLayout={onWorkAreaLayout}
+          >
             <Animated.View
-              style={[
-                styles.chromeBlock,
-                tableReveal && styles.chromeOverlayTop,
-                { opacity: chromeOpacity },
-              ]}
+              style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <Text style={[styles.leadCenter, { color: colors.food.primary }]}>
@@ -673,6 +722,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </Animated.View>
 
             <Animated.View
+              onLayout={onTableLayout}
               style={[
                 styles.tableWrapCompact,
                 {
@@ -691,11 +741,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </Animated.View>
 
             <Animated.View
-              style={[
-                styles.chromeBlock,
-                tableReveal && styles.chromeOverlayBottom,
-                { opacity: chromeOpacity },
-              ]}
+              style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <CounterControl
@@ -797,31 +843,20 @@ const styles = StyleSheet.create({
   },
   workInner: {
     width: '100%',
-    alignItems: 'center',
-    gap: GAP * 0.5,
-  },
-  workInnerReveal: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: GAP,
+    paddingVertical: GAP,
   },
   chromeBlock: {
     width: '100%',
     alignItems: 'center',
-    gap: GAP * 0.5,
+    gap: GAP * 0.55,
   },
-  chromeOverlayTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
-  },
-  chromeOverlayBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
+  tableWrapCompact: {
+    width: '100%',
+    minHeight: 96,
   },
   introPrimaryBtn: {
     alignSelf: 'center',
@@ -916,10 +951,6 @@ const styles = StyleSheet.create({
   },
   tableWrap: {
     minHeight: 120,
-  },
-  tableWrapCompact: {
-    width: '100%',
-    minHeight: 96,
   },
   secondaryBtn: {
     alignSelf: 'center',
