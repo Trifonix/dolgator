@@ -9,6 +9,7 @@ import {
 import { colors } from '../theme/colors';
 import {
   CENTER_CTRL_GAP,
+  CENTER_CTRL_ROW_WIDTH,
   CENTER_OK_FONT_SIZE,
   CENTER_OK_HEIGHT,
   CENTER_OK_WIDTH,
@@ -235,6 +236,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   wrapperCompact: {
+    width: CENTER_CTRL_ROW_WIDTH,
     paddingVertical: 2,
   },
   row: {

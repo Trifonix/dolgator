@@ -21,7 +21,10 @@ export const CENTER_OK_WIDTH = 72;
 export const CENTER_OK_HEIGHT = 40;
 export const CENTER_OK_FONT_SIZE = 26;
 /** Зазор между − / OK / + */
-export const CENTER_CTRL_GAP = 8;
+export const CENTER_CTRL_GAP = 16;
+/** Ширина ряда − / OK / + — служебная строка той же ширины */
+export const CENTER_CTRL_ROW_WIDTH =
+  CENTER_SIDE_BTN + CENTER_CTRL_GAP + CENTER_OK_WIDTH + CENTER_CTRL_GAP + CENTER_SIDE_BTN;
 
 /** Мин. отступ снизу под 3-кнопочную навигацию Android (dp) */
 export const ANDROID_NAV_BAR_MIN = 40;

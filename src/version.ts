@@ -15,11 +15,15 @@ export const LAST_COMMIT_AT = '2026-08-30T13:45:00+03:00';
 
 export function formatLastCommit(dateIso: string): string {
   const d = new Date(dateIso);
-  return d.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return d
+    .toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    .replace(/,/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }

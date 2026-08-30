@@ -23,7 +23,7 @@ import { useTrackerData } from './src/hooks/useTrackerData';
 import { ChangelogScreen } from './src/screens/ChangelogScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
-import { fullScreen, ANDROID_NAV_BAR_MIN, GAP } from './src/theme/layout';
+import { fullScreen, ANDROID_NAV_BAR_MIN, CENTER_CTRL_ROW_WIDTH, GAP } from './src/theme/layout';
 import { APP_NAME, APP_VERSION, DEVELOPER_NAME, DEVELOPER_URL, formatLastCommit, LAST_COMMIT_AT } from './src/version';
 
 type TableVariant = 'exercise' | 'food';
@@ -195,22 +195,22 @@ function AppContent() {
                 compact
               />
               <View style={styles.versionRow}>
-                <View style={styles.versionLine} />
-                <View style={styles.versionText}>
-                  <Text style={styles.versionAppName}>{APP_NAME}</Text>
-                  <View style={styles.versionPair}>
-                    <Text style={styles.versionV}>v</Text>
-                    <Text style={styles.versionNumber}>{APP_VERSION}</Text>
-                  </View>
-                  <Text style={styles.versionDate}>{formatLastCommit(LAST_COMMIT_AT)}</Text>
-                  <Text
-                    style={styles.versionAuthor}
-                    onPress={() => Linking.openURL(DEVELOPER_URL)}
-                  >
-                    {DEVELOPER_NAME}
-                  </Text>
+                <Text style={[styles.versionAppName, styles.versionSlotStart]}>
+                  {APP_NAME}
+                </Text>
+                <View style={[styles.versionPair, styles.versionSlotMid]}>
+                  <Text style={styles.versionV}>v</Text>
+                  <Text style={styles.versionNumber}>{APP_VERSION}</Text>
                 </View>
-                <View style={styles.versionLine} />
+                <Text style={[styles.versionDate, styles.versionSlotMid]}>
+                  {formatLastCommit(LAST_COMMIT_AT)}
+                </Text>
+                <Text
+                  style={[styles.versionAuthor, styles.versionSlotEnd]}
+                  onPress={() => Linking.openURL(DEVELOPER_URL)}
+                >
+                  {DEVELOPER_NAME}
+                </Text>
               </View>
               <CounterControl
                 variant="food"
@@ -297,32 +297,31 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     justifyContent: 'center',
-    alignItems: 'stretch',
+    alignItems: 'center',
     gap: 4,
     paddingHorizontal: 4,
   },
   versionRow: {
+    width: CENTER_CTRL_ROW_WIDTH,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 2,
-    gap: 4,
-  },
-  versionLine: {
-    width: 8,
     flexGrow: 0,
     flexShrink: 0,
-    height: 1,
-    backgroundColor: colors.border,
-    opacity: 0.4,
+    marginVertical: 2,
   },
-  versionText: {
-    flexGrow: 1,
-    flexShrink: 1,
-    flexDirection: 'row',
+  versionSlotStart: {
+    flex: 1,
+    textAlign: 'left',
+  },
+  versionSlotMid: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
+    justifyContent: 'center',
+    textAlign: 'center',
+  },
+  versionSlotEnd: {
+    flex: 1,
+    textAlign: 'right',
   },
   versionAppName: {
     color: colors.brand.primary,
