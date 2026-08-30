@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TextStyle } from 'react-native';
+import { StyleSheet, Text, TextStyle, View } from 'react-native';
 import { colors } from '../theme/colors';
 
 interface TypewriterTextProps {
@@ -12,6 +12,10 @@ interface TypewriterTextProps {
   onComplete?: () => void;
 }
 
+/**
+ * Место под полный текст резервируется сразу (невидимый слой),
+ * видимый набор идёт поверх — без прыжков вёрстки.
+ */
 export function TypewriterText({
   text,
   style,
@@ -23,16 +27,29 @@ export function TypewriterText({
   const [done, setDone] = useState(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const completedForText = useRef<string | null>(null);
 
   useEffect(() => {
     if (!active) {
       setLength(0);
       setDone(false);
+      completedForText.current = null;
+      return;
+    }
+
+    if (text.length === 0) {
+      setLength(0);
+      setDone(true);
+      if (completedForText.current !== text) {
+        completedForText.current = text;
+        onCompleteRef.current?.();
+      }
       return;
     }
 
     setLength(0);
     setDone(false);
+    completedForText.current = null;
     let idx = 0;
 
     const tick = () => {
@@ -41,7 +58,10 @@ export function TypewriterText({
       if (idx >= text.length) {
         clearInterval(timer);
         setDone(true);
-        onCompleteRef.current?.();
+        if (completedForText.current !== text) {
+          completedForText.current = text;
+          onCompleteRef.current?.();
+        }
       }
     };
 
@@ -50,14 +70,30 @@ export function TypewriterText({
   }, [active, text, speed]);
 
   return (
-    <Text style={style}>
-      {text.slice(0, length)}
-      {active && !done ? <Text style={styles.cursor}>|</Text> : null}
-    </Text>
+    <View style={styles.wrap}>
+      <Text style={[style, styles.measure]}>{text}</Text>
+      <Text style={[style, styles.overlay]}>
+        {active ? text.slice(0, length) : ''}
+        {active && !done ? <Text style={styles.cursor}>|</Text> : null}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    width: '100%',
+    position: 'relative',
+  },
+  measure: {
+    opacity: 0,
+  },
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+  },
   cursor: {
     color: colors.exercise.primary,
     opacity: 0.85,

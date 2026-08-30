@@ -102,6 +102,7 @@ function IntroActStep({
   const [blockDone, setBlockDone] = useState(0);
   const extraCount = extraBlocks?.length ?? 0;
   const extrasFinished = extraCount === 0 || blockDone >= extraCount;
+  const showControls = p1Done && extrasFinished;
 
   return (
     <View style={styles.introInner}>
@@ -113,56 +114,57 @@ function IntroActStep({
             : styles.leadCenter
         }
         speed={42}
+        active
         onComplete={() => setTitleDone(true)}
       />
-      {titleDone ? (
-        <TypewriterText
-          text={paragraph1}
-          style={styles.paragraphCenter}
-          speed={22}
-          onComplete={() => setP1Done(true)}
-        />
-      ) : null}
-      {p1Done && extraBlocks
-        ? extraBlocks.map((block, idx) =>
-            idx <= blockDone ? (
-              <View
-                key={block.text}
-                style={block.variant === 'note' ? styles.noteBlock : styles.groupBlock}
-              >
-                <TypewriterText
-                  text={block.text}
-                  style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}
-                  speed={28}
-                  onComplete={() => setBlockDone((n) => Math.max(n, idx + 1))}
-                />
-              </View>
-            ) : null,
-          )
-        : null}
-      {p1Done && extrasFinished ? (
-        <>
-          <Pressable
+      <TypewriterText
+        text={paragraph1}
+        style={styles.paragraphCenter}
+        speed={22}
+        active={titleDone}
+        onComplete={() => setP1Done(true)}
+      />
+      {extraBlocks?.map((block, idx) => {
+        const blockActive = p1Done && blockDone >= idx;
+        return (
+          <View
+            key={block.text}
             style={[
-              styles.introPrimaryBtn,
-              buttonColor ? { backgroundColor: buttonColor } : null,
-              (!canProceed || busy) && styles.primaryBtnDisabled,
+              block.variant === 'note' ? styles.noteBlock : styles.groupBlock,
+              !blockActive && styles.reservedHidden,
             ]}
-            onPress={onAction}
-            disabled={!canProceed || busy}
           >
-            <Text style={styles.primaryBtnText}>
-              {canProceed ? buttonLabel : '…'}
-            </Text>
-          </Pressable>
-          <TypewriterText
-            text={paragraph2}
-            style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}
-            speed={22}
-            onComplete={onTypingComplete}
-          />
-        </>
-      ) : null}
+            <TypewriterText
+              text={block.text}
+              style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}
+              speed={28}
+              active={blockActive}
+              onComplete={() => setBlockDone((n) => Math.max(n, idx + 1))}
+            />
+          </View>
+        );
+      })}
+      <Pressable
+        style={[
+          styles.introPrimaryBtn,
+          buttonColor ? { backgroundColor: buttonColor } : null,
+          (!showControls || !canProceed || busy) && styles.primaryBtnDisabled,
+          !showControls && styles.introPrimaryBtnHidden,
+        ]}
+        onPress={onAction}
+        disabled={!showControls || !canProceed || busy}
+      >
+        <Text style={styles.primaryBtnText}>
+          {canProceed ? buttonLabel : '…'}
+        </Text>
+      </Pressable>
+      <TypewriterText
+        text={paragraph2}
+        style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}
+        speed={22}
+        active={showControls}
+        onComplete={onTypingComplete}
+      />
     </View>
   );
 }
@@ -818,6 +820,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.exercise.dim,
     alignItems: 'center',
     marginVertical: GAP * 0.25,
+  },
+  introPrimaryBtnHidden: {
+    opacity: 0,
+  },
+  reservedHidden: {
+    opacity: 0,
   },
   leadCenter: {
     color: colors.exercise.primary,
