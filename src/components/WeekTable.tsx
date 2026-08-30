@@ -11,6 +11,7 @@ import {
   type StyleProp,
 } from 'react-native';
 import { colors, EXERCISE_COLUMN_COLORS, EXERCISE_COLUMN_GHOST } from '../theme/colors';
+import { fonts } from '../theme/fonts';
 import { getDayOfMonth } from '../utils/dates';
 import { ExerciseCell, ExerciseColumns } from '../types';
 import { exercisesToTableRows } from '../storage/storage';
@@ -327,7 +328,7 @@ export function WeekTable({
                               }
                               style={[
                                 styles.exerciseMiniCell,
-                                { fontWeight: showActual ? '700' : '400' },
+                                showActual ? styles.fontCurrent : styles.fontPast,
                               ]}
                               pulse={showActual}
                               pulseDelayMs={miniIdx * 280}
@@ -345,6 +346,7 @@ export function WeekTable({
                             style={[
                               styles.cellText,
                               variant === 'food' && styles.foodCellText,
+                              hasActual ? styles.fontCurrent : styles.fontPast,
                               {
                                 color: hasActual
                                   ? palette.primary
@@ -389,7 +391,7 @@ export function WeekTable({
               {weekCompare != null && (
                 <View style={styles.weekCompareStack}>
                   <Text
-                    style={styles.weekComparePrev}
+                    style={[styles.weekComparePrev, styles.fontPast]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.5}
@@ -399,6 +401,7 @@ export function WeekTable({
                   <Text
                     style={[
                       styles.weekCompareCurrent,
+                      styles.fontCurrent,
                       {
                         color: weekCompareColor(
                           variant,
@@ -439,6 +442,7 @@ export function WeekTable({
                   <Text
                     style={[
                       styles.sumText,
+                      hasActual ? styles.fontCurrent : styles.fontPast,
                       {
                         color: hasActual
                           ? palette.primary
@@ -557,6 +561,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   headerText: {
+    fontFamily: fonts.ui,
     fontSize: 10,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
@@ -565,6 +570,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   rowLabelText: {
+    fontFamily: fonts.ui,
     fontSize: 8,
     color: colors.textMuted,
   },
@@ -580,7 +586,6 @@ const styles = StyleSheet.create({
   },
   cellText: {
     fontSize: 9,
-    fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   exerciseMiniRow: {
@@ -611,7 +616,6 @@ const styles = StyleSheet.create({
   },
   sumText: {
     fontSize: 9,
-    fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
   weekCompareStack: {
@@ -621,15 +625,21 @@ const styles = StyleSheet.create({
   },
   weekCompareCurrent: {
     fontSize: 8,
-    fontWeight: '700',
     fontVariant: ['tabular-nums'],
     lineHeight: 9,
   },
   weekComparePrev: {
     fontSize: 7,
-    fontWeight: '600',
     fontVariant: ['tabular-nums'],
     color: colors.textMuted,
     lineHeight: 8,
+  },
+  fontPast: {
+    fontFamily: fonts.past,
+    fontWeight: '400',
+  },
+  fontCurrent: {
+    fontFamily: fonts.current,
+    fontWeight: '700',
   },
 });
