@@ -14,6 +14,94 @@ const PX = 2;
 const YEL = '#ffe566';
 const TAN = '#c4a035';
 
+type HazeSide = 'purple' | 'cyan';
+
+const HAZE_COLOR = {
+  purple: colors.exercise.glow,
+  cyan: colors.food.glow,
+} as const;
+
+/** Слои дымки: чем дальше — тем мягче и прозрачнее */
+const HAZE_LAYERS = [
+  { pad: 20, alpha: 0.045 },
+  { pad: 14, alpha: 0.07 },
+  { pad: 9, alpha: 0.1 },
+  { pad: 5, alpha: 0.14 },
+  { pad: 2, alpha: 0.18 },
+] as const;
+
+const HAZE_STRIPS = 24;
+
+function hexToRgb(hex: string) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  };
+}
+
+function mixGlow(left: string, right: string, t: number, alpha: number) {
+  const a = hexToRgb(left);
+  const b = hexToRgb(right);
+  const r = Math.round(a.r + (b.r - a.r) * t);
+  const g = Math.round(a.g + (b.g - a.g) * t);
+  const bl = Math.round(a.b + (b.b - a.b) * t);
+  return `rgba(${r},${g},${bl},${alpha})`;
+}
+
+/** Ярче у краёв, слабее в центре — двухцветная дымка сзади колбы */
+function stripHazeAlpha(t: number, layerAlpha: number) {
+  const edge = 1 - Math.abs(t - 0.5) * 2;
+  return layerAlpha * (0.18 + 0.82 * edge);
+}
+
+function FlaskHaze({ left, right }: { left: HazeSide; right: HazeSide }) {
+  const leftGlow = HAZE_COLOR[left];
+  const rightGlow = HAZE_COLOR[right];
+
+  return (
+    <View style={styles.hazeRoot} pointerEvents="none">
+      {HAZE_LAYERS.map((layer) => (
+        <View
+          key={layer.pad}
+          style={[
+            styles.hazeShell,
+            {
+              top: -layer.pad,
+              bottom: -layer.pad,
+              left: -layer.pad,
+              right: -layer.pad,
+              borderTopLeftRadius: 2 + layer.pad * 0.25,
+              borderTopRightRadius: 2 + layer.pad * 0.25,
+              borderBottomLeftRadius: 10 + layer.pad * 0.85,
+              borderBottomRightRadius: 10 + layer.pad * 0.85,
+            },
+          ]}
+        >
+          {Array.from({ length: HAZE_STRIPS }, (_, i) => {
+            const t = i / (HAZE_STRIPS - 1);
+            return (
+              <View
+                key={i}
+                style={{
+                  flex: 1,
+                  backgroundColor: mixGlow(
+                    leftGlow,
+                    rightGlow,
+                    t,
+                    stripHazeAlpha(t, layer.alpha),
+                  ),
+                }}
+              />
+            );
+          })}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function useFillHeight(ratio: number, maxPx: number) {
   const clamped = Math.min(1, Math.max(0, ratio));
   const anim = useRef(new Animated.Value(clamped)).current;
@@ -237,21 +325,26 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
   );
 }
 
-function FlaskCaption({ word, color }: { word: string; color: string }) {
-  const [h, setH] = useState(FLASK_HEIGHT);
+function FlaskCaption({
+  word,
+  color,
+  flaskHeight,
+}: {
+  word: string;
+  color: string;
+  flaskHeight: number;
+}) {
   const letters = Array.from(word);
-  const fontSize = Math.min(13, Math.max(8, Math.floor(h / letters.length) - 1));
+  const inset = 3;
+  const inner = Math.max(0, flaskHeight - inset * 2);
+  const fontSize = Math.min(13, Math.max(8, Math.floor(inner / letters.length) - 1));
 
   return (
-    <View
-      style={styles.caption}
-      pointerEvents="none"
-      onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
-    >
+    <View style={[styles.caption, { height: flaskHeight, paddingVertical: inset }]} pointerEvents="none">
       {letters.map((ch, i) => (
         <Text
           key={`${ch}-${i}`}
-          style={[styles.captionLetter, { fontSize, lineHeight: fontSize + 1, color }]}
+          style={[styles.captionLetter, { fontSize, lineHeight: fontSize, color }]}
         >
           {ch}
         </Text>
@@ -277,15 +370,18 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
         <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline flaskHeight={h} />
         <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline flaskHeight={h} />
         <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline flaskHeight={h} />
-        <View style={styles.body}>
-          {fills.map((fill, idx) => (
-            <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
-          ))}
-          <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
-          <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
+        <View style={styles.bodyWrap}>
+          <FlaskHaze left="purple" right="cyan" />
+          <View style={styles.body}>
+            {fills.map((fill, idx) => (
+              <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
+            ))}
+            <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
+            <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />
+          </View>
         </View>
       </View>
-      <FlaskCaption word="ПОВТОРЫ" color={colors.flaskCaptionExercise} />
+      <FlaskCaption word="ПОВТОРЫ" color={colors.flaskCaptionExercise} flaskHeight={h || FLASK_HEIGHT} />
     </View>
   );
 }
@@ -300,7 +396,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 
   return (
     <View style={styles.flaskWithCaption}>
-      <FlaskCaption word="ГРАММЫ" color={colors.flaskCaptionFood} />
+      <FlaskCaption word="ГРАММЫ" color={colors.flaskCaptionFood} flaskHeight={h || FLASK_HEIGHT} />
       <View style={styles.foodWrap}>
         <SideNotch
           side="left"
@@ -314,16 +410,19 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
           hasBaseline={fill.hasBaseline}
           flaskHeight={h}
         />
-        <View
-          style={styles.foodTube}
-          onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
-        >
-          <PulseLiquid
-            kind="food"
-            fillRatio={fill.fillRatio}
-            pulseRatio={fill.pulseRatio}
-            height={fillHeight}
-          />
+        <View style={styles.bodyWrap}>
+          <FlaskHaze left="cyan" right="purple" />
+          <View
+            style={styles.foodTube}
+            onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
+          >
+            <PulseLiquid
+              kind="food"
+              fillRatio={fill.fillRatio}
+              pulseRatio={fill.pulseRatio}
+              height={fillHeight}
+            />
+          </View>
         </View>
       </View>
     </View>
@@ -333,7 +432,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 const styles = StyleSheet.create({
   flaskWithCaption: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-start',
     alignSelf: 'stretch',
     flexGrow: 0,
     flexShrink: 0,
@@ -343,6 +442,7 @@ const styles = StyleSheet.create({
     width: 12,
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexShrink: 0,
   },
   captionLetter: {
     fontFamily: fonts.ui,
@@ -355,10 +455,26 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     alignSelf: 'stretch',
     position: 'relative',
+    overflow: 'visible',
+  },
+  bodyWrap: {
+    flex: 1,
+    marginHorizontal: TICK_GUTTER,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  hazeRoot: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+    overflow: 'visible',
+  },
+  hazeShell: {
+    position: 'absolute',
+    flexDirection: 'row',
+    overflow: 'hidden',
   },
   body: {
     flex: 1,
-    marginHorizontal: TICK_GUTTER,
     flexDirection: 'row',
     alignItems: 'stretch',
     borderWidth: 2,
@@ -370,10 +486,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.flaskGlassInner,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: colors.flaskGlassGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
+    zIndex: 1,
   },
   chamber: {
     flex: 1,
@@ -396,10 +509,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     alignSelf: 'stretch',
     position: 'relative',
+    overflow: 'visible',
   },
   foodTube: {
     flex: 1,
-    marginHorizontal: TICK_GUTTER,
     borderWidth: 2,
     borderColor: colors.flaskGlass,
     borderTopLeftRadius: 2,
@@ -409,10 +522,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.flaskGlassInner,
     overflow: 'hidden',
     position: 'relative',
-    shadowColor: colors.flaskGlassGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 5,
+    zIndex: 1,
   },
   liquid: {
     position: 'absolute',
