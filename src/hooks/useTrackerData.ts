@@ -26,7 +26,7 @@ import {
   todayExerciseSums,
 } from '../utils/flaskMetrics';
 import { needsOnboarding } from '../utils/onboarding';
-import { buildPreviousWeekSeed } from '../utils/onboardingSeed';
+import { buildPreviousWeekSeed, PREV_WEEK_EXERCISE_COL } from '../utils/onboardingSeed';
 import {
   currentFoodDailyTarget,
   exerciseTargetAvgPerSet,
@@ -252,10 +252,29 @@ export function useTrackerData() {
   }, [state, todayKey, persist]);
 
   const completeOnboarding = useCallback(
-    async (templateExercise: ExerciseColumns, templateMeals: number[]) => {
+    async (
+      templateExercise: ExerciseColumns,
+      templateMeals: number[],
+      extraExerciseDays?: ExerciseColumns[],
+    ) => {
       if (!state) return;
 
       const seed = buildPreviousWeekSeed(prevWeekKeys, templateExercise, templateMeals);
+      extraExerciseDays?.forEach((exercises, i) => {
+        const colIdx = PREV_WEEK_EXERCISE_COL[i + 1];
+        if (colIdx == null) return;
+        const key = prevWeekKeys[colIdx];
+        const existing = seed[key];
+        seed[key] = {
+          date: key,
+          exercises: [
+            [...exercises[0]],
+            [...exercises[1]],
+            [...exercises[2]],
+          ],
+          meals: existing?.meals ?? [],
+        };
+      });
       const lastRep =
         templateExercise[2][templateExercise[2].length - 1]
         ?? templateExercise[1][templateExercise[1].length - 1]

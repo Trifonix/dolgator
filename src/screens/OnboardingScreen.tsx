@@ -17,13 +17,12 @@ import {
   buildExerciseColumns,
   buildFoodColumns,
 } from '../components/WeekTable';
-import { EXERCISE_LABELS, MAX_MEALS, MAX_SETS, colors } from '../theme/colors';
+import { MAX_MEALS, MAX_SETS, colors } from '../theme/colors';
 import { GAP } from '../theme/layout';
 import { AppState, DayRecord, ExerciseColumns } from '../types';
 import {
   getDayExercises,
   getDayRecord,
-  inferCurrentExerciseIndex,
   isExerciseDayFull,
   sumExerciseDay,
   sumMealsDay,
@@ -32,13 +31,14 @@ import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils
 import {
   DEFAULT_ONBOARDING_EXERCISE,
   DEFAULT_ONBOARDING_MEALS,
-  PREV_WEEK_EXERCISE_COL,
   PREV_WEEK_FOOD_COL,
   buildOnboardingPreviewWeek,
   buildPreviousWeekSeed,
+  spreadExerciseColumnToExtraDays,
 } from '../utils/onboardingSeed';
 
 type Step = 'welcome' | 'exercise-intro' | 'exercise' | 'food-intro' | 'food';
+type ExtraBlock = { text: string; variant?: 'group' | 'note' };
 
 const WELCOME_TITLE = 'Добро пожаловать!';
 const WELCOME_P1 =
@@ -48,10 +48,18 @@ const WELCOME_P2 =
 
 const EXERCISE_INTRO_TITLE = 'Повторения за прошлую неделю';
 const EXERCISE_INTRO_P1 =
-  'Сейчас нужно ввести примерные значения в 15 подходов (по 5 подходов в упражнении), которые вы сделали на прошлой неделе в один тренировочный день: Ноги (приседания) > Грудные (отжимания) > Спина (подтягивания) | любые другие базовые упражнения.';
+  'Сейчас нужно ввести примерные значения в 15 подходах (по 5 подходов в упражнении), которые вы сделали на прошлой неделе в один тренировочный день:';
+const EXERCISE_INTRO_GROUPS: ExtraBlock[] = [
+  { text: 'Ноги (приседания)', variant: 'group' },
+  { text: 'Грудные (отжимания)', variant: 'group' },
+  { text: 'Спина (подтягивания)', variant: 'group' },
+  { text: 'любые другие базовые упражнения', variant: 'note' },
+];
 const EXERCISE_INTRO_P2 =
   'Можно заполнить вручную через − / число / + и OK, либо нажать «Использовать пример» и принять готовый вариант.';
 
+const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
+const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro'];
 const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise'];
 const INTRO_FADE_MS = 280;
@@ -61,6 +69,7 @@ function IntroActStep({
   paragraph1,
   paragraph2,
   paragraph2Muted = false,
+  extraBlocks,
   buttonLabel,
   onAction,
   onTypingComplete,
@@ -71,6 +80,7 @@ function IntroActStep({
   paragraph1: string;
   paragraph2: string;
   paragraph2Muted?: boolean;
+  extraBlocks?: ExtraBlock[];
   buttonLabel: string;
   onAction: () => void;
   onTypingComplete: () => void;
@@ -79,6 +89,9 @@ function IntroActStep({
 }) {
   const [titleDone, setTitleDone] = useState(false);
   const [p1Done, setP1Done] = useState(false);
+  const [blockDone, setBlockDone] = useState(0);
+  const extraCount = extraBlocks?.length ?? 0;
+  const extrasFinished = extraCount === 0 || blockDone >= extraCount;
 
   return (
     <View style={styles.introInner}>
@@ -96,7 +109,24 @@ function IntroActStep({
           onComplete={() => setP1Done(true)}
         />
       ) : null}
-      {p1Done ? (
+      {p1Done && extraBlocks
+        ? extraBlocks.map((block, idx) =>
+            idx <= blockDone ? (
+              <View
+                key={block.text}
+                style={block.variant === 'note' ? styles.noteBlock : styles.groupBlock}
+              >
+                <TypewriterText
+                  text={block.text}
+                  style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}
+                  speed={28}
+                  onComplete={() => setBlockDone((n) => Math.max(n, idx + 1))}
+                />
+              </View>
+            ) : null,
+          )
+        : null}
+      {p1Done && extrasFinished ? (
         <>
           <Pressable
             style={[
@@ -162,6 +192,7 @@ function ExerciseIntroStep({
     <IntroActStep
       title={EXERCISE_INTRO_TITLE}
       paragraph1={EXERCISE_INTRO_P1}
+      extraBlocks={EXERCISE_INTRO_GROUPS}
       paragraph2={EXERCISE_INTRO_P2}
       paragraph2Muted
       buttonLabel="ТАБЛИЦА"
@@ -177,6 +208,7 @@ interface OnboardingScreenProps {
   onComplete: (
     exercise: ExerciseColumns,
     meals: number[],
+    extraExerciseDays?: ExerciseColumns[],
   ) => Promise<void>;
 }
 
@@ -302,14 +334,20 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     [prevWeekKeys, previewSeed],
   );
 
+  const currentSetsCount = exerciseDraft[exerciseIndex].length;
+  const currentExerciseReady = currentSetsCount >= MAX_SETS;
   const exerciseFull = isExerciseDayFull(exerciseDraft);
   const mealsDone = mealsDraft.length >= 1;
 
   const applyExerciseExample = useCallback(() => {
-    setExerciseDraft(cloneExercises(DEFAULT_ONBOARDING_EXERCISE));
-    setExerciseIndex(2);
-    setExerciseCounter(DEFAULT_ONBOARDING_EXERCISE[2][4]);
-  }, []);
+    setExerciseDraft((prev) => {
+      const next = cloneExercises(prev);
+      next[exerciseIndex] = [...DEFAULT_ONBOARDING_EXERCISE[exerciseIndex]];
+      return next;
+    });
+    const example = DEFAULT_ONBOARDING_EXERCISE[exerciseIndex];
+    setExerciseCounter(example[example.length - 1] ?? example[0] ?? 4);
+  }, [exerciseIndex]);
 
   const applyFoodExample = useCallback(() => {
     setMealsDraft([...DEFAULT_ONBOARDING_MEALS]);
@@ -317,39 +355,40 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, []);
 
   const submitExerciseSet = useCallback(() => {
-    if (exerciseFull) return;
+    if (currentExerciseReady) return;
     setExerciseDraft((prev) => {
       const next = cloneExercises(prev);
       if (next[exerciseIndex].length >= MAX_SETS) return prev;
       next[exerciseIndex] = [...next[exerciseIndex], exerciseCounter];
-      const newIdx = inferCurrentExerciseIndex(next);
-      setExerciseIndex(newIdx);
       return next;
     });
-  }, [exerciseCounter, exerciseFull, exerciseIndex]);
+  }, [exerciseCounter, currentExerciseReady, exerciseIndex]);
 
   const submitMeal = useCallback(() => {
     if (mealsDraft.length >= MAX_MEALS) return;
     setMealsDraft((prev) => [...prev, foodCounter]);
   }, [foodCounter, mealsDraft.length]);
 
-  const finishExerciseStep = useCallback(() => {
-    const template = exerciseFull
-      ? exerciseDraft
-      : cloneExercises(DEFAULT_ONBOARDING_EXERCISE);
-    const fullSeed = buildPreviousWeekSeed(prevWeekKeys, template, []);
-    const pseudo: AppState = { days: fullSeed } as AppState;
-    const extraDays = PREV_WEEK_EXERCISE_COL.slice(1).map((colIdx) => {
-      const key = prevWeekKeys[colIdx];
-      return getDayExercises(getDayRecord(pseudo, key));
-    });
-    setConfirmedExerciseDays(extraDays);
-    if (!exerciseFull) {
-      setExerciseDraft(template);
-      setExerciseIndex(2);
+  const confirmCurrentExercise = useCallback(() => {
+    if (exerciseDraft[exerciseIndex].length < MAX_SETS) return;
+
+    const extra = spreadExerciseColumnToExtraDays(
+      confirmedExerciseDays,
+      exerciseIndex,
+      exerciseDraft[exerciseIndex],
+    );
+    setConfirmedExerciseDays(extra);
+
+    if (exerciseIndex < 2) {
+      const nextIdx = (exerciseIndex + 1) as 0 | 1 | 2;
+      setExerciseIndex(nextIdx);
+      const example = DEFAULT_ONBOARDING_EXERCISE[nextIdx];
+      setExerciseCounter(example[0] ?? 5);
+      return;
     }
+
     setStep('food-intro');
-  }, [exerciseDraft, exerciseFull, prevWeekKeys]);
+  }, [exerciseDraft, exerciseIndex, confirmedExerciseDays]);
 
   const finishFoodStep = useCallback(async () => {
     const templateEx = exerciseFull
@@ -360,11 +399,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
     setBusy(true);
     try {
-      await onComplete(templateEx, templateMeals);
+      await onComplete(templateEx, templateMeals, confirmedExerciseDays);
     } finally {
       setBusy(false);
     }
-  }, [exerciseDraft, exerciseFull, mealsDraft, onComplete]);
+  }, [exerciseDraft, exerciseFull, mealsDraft, onComplete, confirmedExerciseDays]);
 
   const finishFoodPreview = useCallback(() => {
     const templateMeals =
@@ -416,8 +455,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           <View style={styles.workInner}>
             <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
             <Text style={styles.hintCenter}>
-              Сейчас: {EXERCISE_LABELS[exerciseIndex]} · подход{' '}
-              {Math.min(exerciseDraft[exerciseIndex].length + 1, MAX_SETS)} из {MAX_SETS}
+              Сейчас: {FILL_BTN_LABELS[exerciseIndex]} ·{' '}
+              {currentExerciseReady
+                ? `5 из ${MAX_SETS} — нажмите ЗАПОЛНИЛ`
+                : `подход ${currentSetsCount + 1} из ${MAX_SETS}`}
             </Text>
             <View style={styles.tableWrapCompact}>
               <WeekTable
@@ -436,13 +477,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               onValuePress={() => setPendingConfirm('exercise')}
               onUndoLast={() => {}}
               onArmUndo={() => {}}
-              okMode={exerciseFull ? 'disabled' : 'active'}
+              okMode={currentExerciseReady ? 'disabled' : 'active'}
               compact
             />
             <Pressable
-              style={[styles.introPrimaryBtn, busy && styles.primaryBtnDisabled]}
-              onPress={finishExerciseStep}
-              disabled={busy}
+              style={[
+                styles.introPrimaryBtn,
+                { backgroundColor: FILL_BTN_COLORS[exerciseIndex] },
+                !currentExerciseReady && styles.primaryBtnDisabled,
+              ]}
+              onPress={confirmCurrentExercise}
+              disabled={!currentExerciseReady || busy}
             >
               <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
             </Pressable>
@@ -642,6 +687,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  groupBlock: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.bgCard,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.exercise.primary,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  groupBlockText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+    textAlign: 'left',
+  },
+  noteBlock: {
+    alignSelf: 'stretch',
+    paddingVertical: 2,
+    paddingHorizontal: 12,
+  },
+  noteBlockText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '400',
+    fontStyle: 'italic',
+    lineHeight: 18,
+    textAlign: 'left',
   },
   lead: {
     color: colors.exercise.primary,

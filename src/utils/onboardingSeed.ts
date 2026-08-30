@@ -21,6 +21,10 @@ function cloneExerciseColumns(exercises: ExerciseColumns): ExerciseColumns {
   ];
 }
 
+export function emptyExerciseColumns(): ExerciseColumns {
+  return [[], [], []];
+}
+
 function randomInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
@@ -33,6 +37,19 @@ function varyGrams(value: number): number {
   const delta = randomInt(-20, 20);
   const biased = Math.abs(delta) < 10 ? (delta >= 0 ? 10 : -10) : delta;
   return Math.max(10, value + biased);
+}
+
+/** Пн — как ввели, ср и пт — та же колонка упражнения ±1 повтор */
+export function spreadExerciseColumnToExtraDays(
+  extraDays: ExerciseColumns[],
+  exerciseIdx: 0 | 1 | 2,
+  mondayColumn: number[],
+): ExerciseColumns[] {
+  const wed = extraDays[0] ? cloneExerciseColumns(extraDays[0]) : emptyExerciseColumns();
+  const fri = extraDays[1] ? cloneExerciseColumns(extraDays[1]) : emptyExerciseColumns();
+  wed[exerciseIdx] = mondayColumn.map(varyRep);
+  fri[exerciseIdx] = mondayColumn.map(varyRep);
+  return [wed, fri];
 }
 
 /**
