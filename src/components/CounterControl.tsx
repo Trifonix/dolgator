@@ -9,6 +9,9 @@ import {
 import { colors } from '../theme/colors';
 
 const DOUBLE_TAP_MS = 320;
+const UNDO_OK = '#ef9a9a';
+
+export type OkMode = 'active' | 'undo' | 'disabled';
 
 interface CounterControlProps {
   value: number;
@@ -16,6 +19,7 @@ interface CounterControlProps {
   onIncrement: () => void;
   onValuePress: () => void;
   onUndoLast: () => void;
+  okMode: OkMode;
   variant: 'exercise' | 'food';
   compact?: boolean;
 }
@@ -26,25 +30,45 @@ export function CounterControl({
   onIncrement,
   onValuePress,
   onUndoLast,
+  okMode,
   variant,
   compact = false,
 }: CounterControlProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
   const btnSize = compact ? 40 : 52;
   const valueSize = compact ? 26 : 36;
-  const pendingInc = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTap = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handlePlus = () => {
-    if (pendingInc.current) {
-      clearTimeout(pendingInc.current);
-      pendingInc.current = null;
-      onUndoLast();
+  const valueColor =
+    okMode === 'disabled'
+      ? colors.textMuted
+      : okMode === 'undo'
+        ? UNDO_OK
+        : palette.primary;
+  const valueBorder =
+    okMode === 'disabled'
+      ? colors.border
+      : okMode === 'undo'
+        ? UNDO_OK
+        : palette.primary;
+
+  const handleOkPress = () => {
+    if (okMode === 'disabled') return;
+
+    if (okMode === 'undo') {
+      if (pendingTap.current) {
+        clearTimeout(pendingTap.current);
+        pendingTap.current = null;
+        onUndoLast();
+        return;
+      }
+      pendingTap.current = setTimeout(() => {
+        pendingTap.current = null;
+      }, DOUBLE_TAP_MS);
       return;
     }
-    pendingInc.current = setTimeout(() => {
-      pendingInc.current = null;
-      onIncrement();
-    }, DOUBLE_TAP_MS);
+
+    onValuePress();
   };
 
   return (
@@ -63,19 +87,23 @@ export function CounterControl({
         </Pressable>
 
         <Pressable
-          onPress={onValuePress}
+          onPress={handleOkPress}
+          disabled={okMode === 'disabled'}
           style={({ pressed }) => [
             styles.valueBox,
             compact && styles.valueBoxCompact,
-            { borderColor: palette.primary, shadowColor: palette.glow },
-            pressed && styles.valueBoxPressed,
+            { borderColor: valueBorder, shadowColor: okMode === 'undo' ? UNDO_OK : palette.glow },
+            okMode === 'disabled' && styles.valueBoxDisabled,
+            okMode === 'undo' && styles.valueBoxUndo,
+            okMode === 'active' && pressed && styles.valueBoxPressed,
+            okMode === 'undo' && pressed && styles.valueBoxPressed,
           ]}
         >
-          <Text style={[styles.value, { fontSize: valueSize, color: palette.primary }]}>{value}</Text>
+          <Text style={[styles.value, { fontSize: valueSize, color: valueColor }]}>{value}</Text>
         </Pressable>
 
         <Pressable
-          onPress={handlePlus}
+          onPress={onIncrement}
           style={({ pressed }) => [
             styles.btn,
             { width: btnSize, height: btnSize, borderRadius: btnSize / 2, borderColor: palette.primary, shadowColor: palette.glow },
@@ -148,6 +176,14 @@ const styles = StyleSheet.create({
   valueBoxPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.97 }],
+  },
+  valueBoxDisabled: {
+    opacity: 0.45,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  valueBoxUndo: {
+    opacity: 0.92,
   },
   value: {
     fontWeight: '700',

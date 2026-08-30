@@ -32,10 +32,15 @@ function syncExerciseIndex(state: AppState, todayKey: string): AppState {
   };
 }
 
+const UNDO_WINDOW_MS = 60_000;
+
 export function useTrackerData() {
   const [state, setState] = useState<AppState | null>(null);
   const [exerciseCounter, setExerciseCounter] = useState(DEFAULT_STATE.lastExerciseRep);
   const [foodCounter, setFoodCounter] = useState(DEFAULT_STATE.lastMealGrams);
+  const [exerciseUndoUntil, setExerciseUndoUntil] = useState(0);
+  const [foodUndoUntil, setFoodUndoUntil] = useState(0);
+  const [clock, setClock] = useState(Date.now());
 
   const weekDays = useMemo(() => getCurrentWeekDays(), []);
   const weekKeys = useMemo(
@@ -61,6 +66,14 @@ export function useTrackerData() {
     setState(next);
     await saveState(next);
   }, []);
+
+  useEffect(() => {
+    const until = Math.max(exerciseUndoUntil, foodUndoUntil);
+    const wait = until - clock;
+    if (wait <= 0) return;
+    const id = setTimeout(() => setClock(Date.now()), wait);
+    return () => clearTimeout(id);
+  }, [exerciseUndoUntil, foodUndoUntil, clock]);
 
   const adjustExercise = useCallback((delta: number) => {
     setExerciseCounter((v) => Math.max(0, v + delta));
@@ -102,6 +115,9 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    if (isExerciseDayFull(nextExercises)) {
+      setExerciseUndoUntil(Date.now() + UNDO_WINDOW_MS);
+    }
   }, [state, todayKey, exerciseCounter, persist]);
 
   /** OK — записать приём пищи в таблицу */
@@ -124,6 +140,9 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    if ([...today.meals, foodCounter].length >= MAX_MEALS) {
+      setFoodUndoUntil(Date.now() + UNDO_WINDOW_MS);
+    }
   }, [state, todayKey, foodCounter, persist]);
 
   const undoLastExercise = useCallback(async () => {
@@ -157,6 +176,7 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    setExerciseUndoUntil(0);
   }, [state, todayKey, persist]);
 
   const undoLastFood = useCallback(async () => {
@@ -174,6 +194,7 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    setFoodUndoUntil(0);
   }, [state, todayKey, persist]);
 
   const clearTodayExercise = useCallback(async () => {
@@ -193,6 +214,7 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    setExerciseUndoUntil(0);
   }, [state, todayKey, persist]);
 
   const clearTodayFood = useCallback(async () => {
@@ -208,6 +230,7 @@ export function useTrackerData() {
     };
 
     await persist(next);
+    setFoodUndoUntil(0);
   }, [state, todayKey, persist]);
 
   const currentExerciseLabel = state
@@ -227,6 +250,10 @@ export function useTrackerData() {
     : false;
 
   const isFoodDayFullToday = todayMealsCount >= MAX_MEALS;
+
+  const exerciseUndoArmed =
+    isExerciseDayFullToday && exerciseUndoUntil > clock;
+  const foodUndoArmed = isFoodDayFullToday && foodUndoUntil > clock;
 
   const weekExerciseData = weekKeys.map((key) => {
     if (!state) return { exercises: EMPTY_EXERCISES, sum: 0 };
@@ -301,6 +328,8 @@ export function useTrackerData() {
     todayExerciseSetsCount,
     isExerciseDayFullToday,
     isFoodDayFullToday,
+    exerciseUndoArmed,
+    foodUndoArmed,
     weekExerciseData,
     weekFoodData,
     weekExerciseTotal,
