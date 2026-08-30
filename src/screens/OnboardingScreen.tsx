@@ -47,7 +47,6 @@ const WELCOME_P1 =
 const WELCOME_P2 =
   'Сначала нужно ввести примерные значения за прошлую неделю — они станут ориентиром для плавного прогресса: больше повторений в тренировках и чуть меньше граммов в питании каждую неделю.';
 
-const EXERCISE_INTRO_TITLE = 'Повторения за прошлую неделю';
 const EXERCISE_INTRO_P1 =
   'Сейчас нужно ввести примерные значения в 15 подходах (по 5 подходов в упражнении), которые вы сделали на прошлой неделе в один тренировочный день:';
 const EXERCISE_INTRO_GROUPS: ExtraBlock[] = [
@@ -73,48 +72,72 @@ const INTRO_FADE_MS = 320;
 
 function IntroActStep({
   title,
+  titleSecondLine,
   paragraph1,
   paragraph2,
   paragraph2Muted = false,
   extraBlocks,
   buttonLabel,
   accentColor = colors.intro.primary,
+  titleColor,
+  groupAccentColor,
   buttonColor = colors.intro.dim,
+  darkLabel = false,
   onAction,
   onTypingComplete,
   canProceed,
   busy,
 }: {
   title: string;
+  titleSecondLine?: string;
   paragraph1: string;
   paragraph2: string;
   paragraph2Muted?: boolean;
   extraBlocks?: ExtraBlock[];
   buttonLabel: string;
   accentColor?: string;
+  titleColor?: string;
+  groupAccentColor?: string;
   buttonColor?: string;
+  darkLabel?: boolean;
   onAction: () => void;
   onTypingComplete: () => void;
   canProceed: boolean;
   busy: boolean;
 }) {
+  const [title1Done, setTitle1Done] = useState(false);
   const [titleDone, setTitleDone] = useState(false);
   const [p1Done, setP1Done] = useState(false);
   const [blockDone, setBlockDone] = useState(0);
   const extraCount = extraBlocks?.length ?? 0;
   const extrasFinished = extraCount === 0 || blockDone >= extraCount;
   const showControls = p1Done && extrasFinished;
+  const headingColor = titleColor ?? accentColor;
+  const barColor = groupAccentColor ?? accentColor;
 
   return (
     <View style={styles.introInner}>
       <TypewriterText
         text={title}
-        style={[styles.leadCenter, { color: accentColor }]}
-        cursorColor={accentColor}
+        style={[styles.leadCenter, { color: headingColor }]}
+        cursorColor={headingColor}
         speed={42}
         active
-        onComplete={() => setTitleDone(true)}
+        onComplete={() => {
+          if (titleSecondLine) setTitle1Done(true);
+          else setTitleDone(true);
+        }}
       />
+      {titleSecondLine ? (
+        <TypewriterText
+          text={titleSecondLine}
+          style={[styles.leadCenter, styles.leadSecondLine, { color: accentColor }]}
+          cursorColor={accentColor}
+          speed={42}
+          active={title1Done}
+          onComplete={() => setTitleDone(true)}
+        />
+      ) : null}
       <TypewriterText
         text={paragraph1}
         style={styles.paragraphCenter}
@@ -130,7 +153,7 @@ function IntroActStep({
             key={block.text}
             style={[
               block.variant === 'note' ? styles.noteBlock : styles.groupBlock,
-              block.variant !== 'note' && { borderLeftColor: accentColor },
+              block.variant !== 'note' && { borderLeftColor: barColor },
               !blockActive && styles.reservedHidden,
             ]}
           >
@@ -155,7 +178,7 @@ function IntroActStep({
         onPress={onAction}
         disabled={!showControls || !canProceed || busy}
       >
-        <Text style={styles.primaryBtnText}>
+        <Text style={[styles.primaryBtnText, darkLabel && styles.primaryBtnTextDark]}>
           {canProceed ? buttonLabel : '…'}
         </Text>
       </Pressable>
@@ -187,7 +210,8 @@ function WelcomeStep({
       title={WELCOME_TITLE}
       paragraph1={WELCOME_P1}
       paragraph2={WELCOME_P2}
-      buttonLabel="Начать"
+      buttonLabel="НАЧАТЬ"
+      darkLabel
       onAction={onStart}
       onTypingComplete={onTypingComplete}
       canProceed={canStart}
@@ -209,12 +233,16 @@ function ExerciseIntroStep({
 }) {
   return (
     <IntroActStep
-      title={EXERCISE_INTRO_TITLE}
+      title="Повторения"
+      titleSecondLine="за прошлую неделю"
+      titleColor={colors.exercise.primary}
+      groupAccentColor={colors.exercise.primary}
       paragraph1={EXERCISE_INTRO_P1}
       extraBlocks={EXERCISE_INTRO_GROUPS}
       paragraph2={EXERCISE_INTRO_P2}
       paragraph2Muted
       buttonLabel="ТАБЛИЦА"
+      darkLabel
       onAction={onContinue}
       onTypingComplete={onTypingComplete}
       canProceed={canContinue}
@@ -640,11 +668,16 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               style={[styles.chromeBlock, { opacity: chromeOpacity }]}
               pointerEvents={tableReveal ? 'none' : 'auto'}
             >
-              <Text style={[styles.leadCenter, { color: colors.exercise.primary }]}>
-                Прошлая неделя — повторения
+              <Text style={[styles.leadCenter, { color: colors.intro.primary }]}>
+                Прошлая неделя —{'\n'}
+                <Text style={{ color: colors.exercise.primary }}>повторения</Text>
               </Text>
-              <Text style={styles.hintCenter}>
-                Сейчас: {FILL_BTN_LABELS[exerciseIndex]} ·{' '}
+              <Text style={[styles.hintCenter, { color: colors.intro.primary }]}>
+                Сейчас:{' '}
+                <Text style={{ color: colors.exercise.primary }}>
+                  {FILL_BTN_LABELS[exerciseIndex]}
+                </Text>
+                {' · '}
                 {currentExerciseReady
                   ? `5 из ${MAX_SETS} — нажмите ЗАПОЛНИЛ`
                   : `подход ${currentSetsCount + 1} из ${MAX_SETS}`}
@@ -701,7 +734,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onPress={applyExerciseExample}
                 disabled={tableReveal}
               >
-                <Text style={styles.secondaryBtnText}>Использовать пример</Text>
+                <Text style={styles.secondaryBtnText}>
+                  Использовать{' '}
+                  <Text style={{ color: colors.intro.primary }}>пример</Text>
+                </Text>
               </Pressable>
             </Animated.View>
           </View>
@@ -887,6 +923,10 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     textAlign: 'center',
   },
+  leadSecondLine: {
+    fontSize: 18,
+    marginTop: -4,
+  },
   paragraphCenter: {
     color: colors.text,
     fontSize: 14,
@@ -986,5 +1026,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
     fontWeight: '700',
+  },
+  primaryBtnTextDark: {
+    color: '#1a1608',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
 });
