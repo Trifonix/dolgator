@@ -17,9 +17,6 @@ import {
 } from '../theme/layout';
 
 const DOUBLE_TAP_MS = 320;
-/** Макс. пауза между тапами в «быстрой» серии для армирования undo */
-const RAPID_TAP_GAP_MS = 400;
-const ARM_UNDO_TAPS = 10;
 const UNDO_OK = '#ef9a9a';
 
 function SideSymbol({
@@ -67,7 +64,6 @@ interface CounterControlProps {
   onIncrement: () => void;
   onValuePress: () => void;
   onUndoLast: () => void;
-  onArmUndo: () => void;
   okMode: OkMode;
   variant: 'exercise' | 'food';
   /** Переопределяет палитру variant (для цвета текущего упражнения) */
@@ -81,7 +77,6 @@ export function CounterControl({
   onIncrement,
   onValuePress,
   onUndoLast,
-  onArmUndo,
   okMode,
   variant,
   accentPalette,
@@ -94,7 +89,6 @@ export function CounterControl({
   const okHeight = compact ? CENTER_OK_HEIGHT : 52;
   const valueSize = compact ? CENTER_OK_FONT_SIZE : 36;
   const pendingTap = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const rapidCount = useRef(0);
 
   const valueColor =
     okMode === 'disabled'
@@ -124,7 +118,6 @@ export function CounterControl({
     if (okMode === 'undo') {
       if (pendingTap.current) {
         clearPending();
-        rapidCount.current = 0;
         onUndoLast();
         return;
       }
@@ -134,23 +127,9 @@ export function CounterControl({
       return;
     }
 
-    rapidCount.current += 1;
-    clearPending();
-
-    if (rapidCount.current >= ARM_UNDO_TAPS) {
-      rapidCount.current = 0;
-      onArmUndo();
-      return;
-    }
-
-    if (okMode === 'active' && rapidCount.current === 1) {
+    if (okMode === 'active') {
       onValuePress();
     }
-
-    pendingTap.current = setTimeout(() => {
-      pendingTap.current = null;
-      rapidCount.current = 0;
-    }, RAPID_TAP_GAP_MS);
   };
 
   return (

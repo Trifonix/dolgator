@@ -27,6 +27,8 @@ interface WeekTableProps {
   maxRows: number;
   weekCompare?: { current: number; previous: number };
   onTap?: () => void;
+  /** Долгий тап — режим удаления последней записи (связанный счётчик OK) */
+  onLongPress?: () => void;
   flex?: boolean;
 }
 
@@ -163,21 +165,38 @@ export function WeekTable({
   maxRows,
   weekCompare,
   onTap,
+  onLongPress,
   flex = false,
 }: WeekTableProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
   const headerPalette = variant === 'exercise' ? headerStyles.exercise : headerStyles.food;
   const rows = Array.from({ length: maxRows }, (_, rowIdx) => rowIdx);
+  const longPressHandled = React.useRef(false);
+
+  const handlePress = () => {
+    if (longPressHandled.current) {
+      longPressHandled.current = false;
+      return;
+    }
+    onTap?.();
+  };
+
+  const handleLongPress = () => {
+    longPressHandled.current = true;
+    onLongPress?.();
+  };
 
   return (
     <Pressable
-      onPress={onTap}
-      disabled={!onTap}
+      onPress={handlePress}
+      onLongPress={onLongPress ? handleLongPress : undefined}
+      delayLongPress={550}
+      disabled={!onTap && !onLongPress}
       style={({ pressed }) => [
         styles.container,
         flex && styles.containerFlex,
         { borderColor: palette.primary, shadowColor: palette.glow },
-        onTap && pressed && styles.containerPressed,
+        (onTap || onLongPress) && pressed && styles.containerPressed,
       ]}
     >
       <View style={[styles.body, flex && styles.bodyFlex]}>

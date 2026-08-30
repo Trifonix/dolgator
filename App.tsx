@@ -170,6 +170,7 @@ function AppContent() {
                 previous: tracker.prevWeekExerciseSessionAvg,
               }}
               onTap={() => registerTap('exercise')}
+              onLongPress={() => tracker.armExerciseUndo()}
               flex
             />
           </View>
@@ -185,7 +186,6 @@ function AppContent() {
                 onIncrement={() => tracker.adjustExercise(1)}
                 onValuePress={() => openSubmitDialog('exercise')}
                 onUndoLast={() => tracker.undoLastExercise()}
-                onArmUndo={() => tracker.armExerciseUndo()}
                 okMode={
                   tracker.exerciseUndoArmed
                     ? 'undo'
@@ -220,7 +220,6 @@ function AppContent() {
                 onIncrement={() => tracker.adjustFood(10)}
                 onValuePress={() => openSubmitDialog('food')}
                 onUndoLast={() => tracker.undoLastFood()}
-                onArmUndo={() => tracker.armFoodUndo()}
                 okMode={
                   tracker.foodUndoArmed
                     ? 'undo'
@@ -247,6 +246,7 @@ function AppContent() {
                 previous: tracker.prevWeekFoodDailyAvg,
               }}
               onTap={() => registerTap('food')}
+              onLongPress={() => tracker.armFoodUndo()}
               flex
             />
           </View>

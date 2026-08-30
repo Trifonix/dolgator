@@ -157,11 +157,15 @@ export function useTrackerData() {
   }, [state, todayKey, foodCounter, persist]);
 
   const armExerciseUndo = useCallback(() => {
-    setExerciseUndoUntil(Date.now() + UNDO_WINDOW_MS);
+    setExerciseUndoUntil((until) =>
+      until > Date.now() ? 0 : Date.now() + UNDO_WINDOW_MS,
+    );
   }, []);
 
   const armFoodUndo = useCallback(() => {
-    setFoodUndoUntil(Date.now() + UNDO_WINDOW_MS);
+    setFoodUndoUntil((until) =>
+      until > Date.now() ? 0 : Date.now() + UNDO_WINDOW_MS,
+    );
   }, []);
 
   const undoLastExercise = useCallback(async () => {

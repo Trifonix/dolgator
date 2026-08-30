@@ -75,6 +75,7 @@ const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
 const MIN_FOOD_MEALS = 1;
 const INTRO_FADE_MS = 380;
 const SPREAD_STEP_MS = 260;
+const UNDO_WINDOW_MS = 60_000;
 
 function IntroActStep({
   title,
@@ -283,6 +284,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [introReady, setIntroReady] = useState(false);
   const [tableReveal, setTableReveal] = useState(false);
   const [spreadBusy, setSpreadBusy] = useState(false);
+  const [exerciseUndoUntil, setExerciseUndoUntil] = useState(0);
+  const [foodUndoUntil, setFoodUndoUntil] = useState(0);
+  const [clock, setClock] = useState(Date.now());
   const introOpacity = useRef(new Animated.Value(0)).current;
   const introSlide = useRef(new Animated.Value(0)).current;
   const introTransitioning = useRef(false);
@@ -308,10 +312,31 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     };
   }, []);
 
+  useEffect(() => {
+    const until = Math.max(exerciseUndoUntil, foodUndoUntil);
+    const wait = until - clock;
+    if (wait <= 0) return;
+    const id = setTimeout(() => setClock(Date.now()), wait);
+    return () => clearTimeout(id);
+  }, [exerciseUndoUntil, foodUndoUntil, clock]);
+
+  const exerciseUndoArmed = exerciseUndoUntil > clock;
+  const foodUndoArmed = foodUndoUntil > clock;
+
   const playIntroFadeIn = useCallback(
     (onDone?: () => void) => {
       introSlide.setValue(14);
       introOpacity.setValue(0);
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        introOpacity.setValue(1);
+        introSlide.setValue(0);
+        onDone?.();
+      };
+      const safety = setTimeout(finish, INTRO_FADE_MS + 120);
+
       Animated.parallel([
         Animated.timing(introOpacity, {
           toValue: 1,
@@ -326,11 +351,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           useNativeDriver: false,
         }),
       ]).start(({ finished }) => {
-        if (finished) {
-          introOpacity.setValue(1);
-          introSlide.setValue(0);
-          onDone?.();
-        }
+        clearTimeout(safety);
+        finish();
       });
     },
     [introOpacity, introSlide],
@@ -379,8 +401,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       }),
     ]).start(({ finished }) => {
       if (!finished) {
-        unlock();
-        return;
+        introOpacity.setValue(0);
+        introSlide.setValue(-14);
       }
       setStep(next);
       playIntroFadeIn(() => {
@@ -535,6 +557,28 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     setMealsDraft((prev) => [...prev, foodCounter]);
   }, [foodCounter, mealsDraft.length]);
 
+  const undoLastExerciseSet = useCallback(() => {
+    setExerciseDraft((prev) => {
+      let col = -1;
+      for (let i = 2; i >= 0; i--) {
+        if (prev[i].length > 0) {
+          col = i;
+          break;
+        }
+      }
+      if (col < 0) return prev;
+      const next = cloneExercises(prev);
+      next[col] = next[col].slice(0, -1);
+      return next;
+    });
+    setExerciseUndoUntil(0);
+  }, []);
+
+  const undoLastMeal = useCallback(() => {
+    setMealsDraft((prev) => (prev.length > 0 ? prev.slice(0, -1) : prev));
+    setFoodUndoUntil(0);
+  }, []);
+
   const confirmCurrentExercise = useCallback(() => {
     if (tableReveal || spreadBusy) return;
     if (exerciseDraft[exerciseIndex].length < MAX_SETS) return;
@@ -677,7 +721,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               </Text>
               <Text style={[styles.hintCenter, { color: colors.intro.primary }]}>
                 Сейчас:{' '}
-                <Text style={{ color: colors.exercise.primary }}>
+                <Text style={{ color: FILL_BTN_COLORS[exerciseIndex] }}>
                   {FILL_BTN_LABELS[exerciseIndex]}
                 </Text>
                 {' · '}
@@ -703,6 +747,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 todayKey={todayKey}
                 columns={buildExerciseColumns(exercisePreview)}
                 maxRows={MAX_SETS}
+                onLongPress={() =>
+                  setExerciseUndoUntil((until) =>
+                    until > Date.now() ? 0 : Date.now() + UNDO_WINDOW_MS,
+                  )
+                }
               />
             </Animated.View>
 
@@ -716,9 +765,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onDecrement={() => setExerciseCounter((v) => Math.max(0, v - 1))}
                 onIncrement={() => setExerciseCounter((v) => v + 1)}
                 onValuePress={() => setPendingConfirm('exercise')}
-                onUndoLast={() => {}}
-                onArmUndo={() => {}}
-                okMode={currentExerciseReady || tableReveal || spreadBusy ? 'disabled' : 'active'}
+                onUndoLast={undoLastExerciseSet}
+                okMode={
+                  exerciseUndoArmed
+                    ? 'undo'
+                    : currentExerciseReady || tableReveal || spreadBusy
+                      ? 'disabled'
+                      : 'active'
+                }
                 compact
               />
               <Pressable
@@ -794,6 +848,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 todayKey={todayKey}
                 columns={buildFoodColumns(foodPreview)}
                 maxRows={MAX_MEALS}
+                onLongPress={() =>
+                  setFoodUndoUntil((until) =>
+                    until > Date.now() ? 0 : Date.now() + UNDO_WINDOW_MS,
+                  )
+                }
               />
             </Animated.View>
 
@@ -807,9 +866,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onDecrement={() => setFoodCounter((v) => Math.max(0, v - 10))}
                 onIncrement={() => setFoodCounter((v) => v + 10)}
                 onValuePress={() => setPendingConfirm('food')}
-                onUndoLast={() => {}}
-                onArmUndo={() => {}}
-                okMode={mealsDraft.length >= MAX_MEALS || tableReveal ? 'disabled' : 'active'}
+                onUndoLast={undoLastMeal}
+                okMode={
+                  foodUndoArmed
+                    ? 'undo'
+                    : mealsDraft.length >= MAX_MEALS || tableReveal
+                      ? 'disabled'
+                      : 'active'
+                }
                 compact
               />
               <Pressable
@@ -850,7 +914,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.introContainer}>
         <Animated.View
-          key={step}
           style={[
             styles.stepFrame,
             (step === 'exercise' || step === 'food') && styles.stepFrameFill,

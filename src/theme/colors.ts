@@ -47,8 +47,8 @@ export const colors = {
 };
 
 export const EXERCISE_LABELS = ['ноги', 'грудные', 'спина'] as const;
-/** Подколонки таблицы повторений: ноги / грудные / спина */
-export const EXERCISE_COLUMN_COLORS = ['#e040fb', '#ff5c93', '#7b88ff'] as const;
+/** Подколонки таблицы повторений: ноги (жёлтый) / грудные / спина */
+export const EXERCISE_COLUMN_COLORS = ['#ffd54f', '#ff5c93', '#7b88ff'] as const;
 
 export type AccentPalette = {
   primary: string;
@@ -58,7 +58,7 @@ export type AccentPalette = {
 
 /** Цвета кнопок −/OK/+ по текущему упражнению в тренировочном дне */
 export const EXERCISE_COLUMN_PALETTES: readonly AccentPalette[] = [
-  { primary: '#e040fb', glow: '#ff00ff', dim: '#9c27b0' },
+  { primary: '#ffd54f', glow: '#ffeb3b', dim: '#c6a01e' },
   { primary: '#ff5c93', glow: '#ff4081', dim: '#c2185b' },
   { primary: '#7b88ff', glow: '#536dfe', dim: '#3949ab' },
 ];
