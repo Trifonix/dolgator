@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -36,6 +37,11 @@ function isExerciseCell(cell: TableCell | undefined): cell is ExerciseCell {
   return Array.isArray(cell);
 }
 
+/** На native opacity через JS-драйвер на New Arch «проваливается»; на web — наоборот native. */
+const OPACITY_NATIVE = Platform.OS !== 'web';
+/** Еле заметный пульс текущих повторений */
+const PULSE_DIM = 0.88;
+
 function FadeInMiniValue({
   value,
   color,
@@ -59,27 +65,31 @@ function FadeInMiniValue({
     const had = seen.current != null;
     const has = value != null;
 
-    function stopPulse() {
+    function stopPulse(restore = false) {
       pulseLoop.current?.stop();
       pulseLoop.current = null;
+      if (restore && has) {
+        opacity.setValue(1);
+      }
     }
 
     function startPulse() {
       if (cancelled || !pulse) return;
       stopPulse();
+      opacity.setValue(1);
       const beat = Animated.loop(
         Animated.sequence([
           Animated.timing(opacity, {
-            toValue: 0.8,
-            duration: 900,
+            toValue: PULSE_DIM,
+            duration: 1100,
             easing: Easing.inOut(Easing.sin),
-            useNativeDriver: false,
+            useNativeDriver: OPACITY_NATIVE,
           }),
           Animated.timing(opacity, {
             toValue: 1,
-            duration: 900,
+            duration: 1100,
             easing: Easing.inOut(Easing.sin),
-            useNativeDriver: false,
+            useNativeDriver: OPACITY_NATIVE,
           }),
         ]),
       );
@@ -96,7 +106,7 @@ function FadeInMiniValue({
         toValue: 1,
         duration: 320,
         easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
+        useNativeDriver: OPACITY_NATIVE,
       }).start(({ finished }) => {
         if (finished && !cancelled) startPulse();
       });
@@ -112,7 +122,7 @@ function FadeInMiniValue({
 
     return () => {
       cancelled = true;
-      stopPulse();
+      stopPulse(true);
     };
   }, [opacity, pulse, pulseDelayMs, value]);
 
@@ -373,7 +383,7 @@ export function WeekTable({
                                 showActual ? styles.fontCurrent : styles.fontPast,
                               ]}
                               pulse={showActual}
-                              pulseDelayMs={miniIdx * 280}
+                              pulseDelayMs={miniIdx * 160}
                             />
                           );
                         })}
