@@ -293,9 +293,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [pendingConfirm, setPendingConfirm] = useState<'exercise' | 'food' | null>(null);
   const [busy, setBusy] = useState(false);
   const [introReady, setIntroReady] = useState(false);
+  const [exerciseReveal, setExerciseReveal] = useState(false);
   const introOpacity = useRef(new Animated.Value(1)).current;
   const introSlide = useRef(new Animated.Value(0)).current;
   const introTransitioning = useRef(false);
+  const chromeOpacity = useRef(new Animated.Value(1)).current;
+  const tableShift = useRef(new Animated.Value(0)).current;
+  const tableScale = useRef(new Animated.Value(1)).current;
+  const tableOpacity = useRef(new Animated.Value(1)).current;
+  const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isIntroAct = INTRO_ACTS.includes(step);
   const isCenteredAct = CENTERED_ACTS.includes(step);
@@ -305,6 +311,58 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       setIntroReady(false);
     }
   }, [step]);
+
+  useEffect(() => {
+    return () => {
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    };
+  }, []);
+
+  const playFinalExerciseReveal = useCallback(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    setExerciseReveal(true);
+    chromeOpacity.setValue(1);
+    tableShift.setValue(48);
+    tableScale.setValue(1);
+    tableOpacity.setValue(1);
+
+    Animated.parallel([
+      Animated.timing(chromeOpacity, {
+        toValue: 0,
+        duration: 480,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(tableShift, {
+        toValue: 0,
+        duration: 720,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(tableScale, {
+        toValue: 1.06,
+        duration: 720,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    revealTimerRef.current = setTimeout(() => {
+      Animated.timing(tableOpacity, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => {
+        setExerciseReveal(false);
+        chromeOpacity.setValue(1);
+        tableShift.setValue(0);
+        tableScale.setValue(1);
+        tableOpacity.setValue(1);
+        setStep('food-intro');
+      });
+    }, 2600);
+  }, [chromeOpacity, tableShift, tableScale, tableOpacity]);
 
   const transitionIntroStep = useCallback((next: Step) => {
     if (introTransitioning.current) return;
@@ -412,6 +470,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [foodCounter, mealsDraft.length]);
 
   const confirmCurrentExercise = useCallback(() => {
+    if (exerciseReveal) return;
     if (exerciseDraft[exerciseIndex].length < MAX_SETS) return;
 
     const extra = spreadExerciseColumnToExtraDays(
@@ -429,8 +488,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       return;
     }
 
-    setStep('food-intro');
-  }, [exerciseDraft, exerciseIndex, confirmedExerciseDays]);
+    playFinalExerciseReveal();
+  }, [
+    exerciseDraft,
+    exerciseIndex,
+    confirmedExerciseDays,
+    exerciseReveal,
+    playFinalExerciseReveal,
+  ]);
 
   const finishFoodStep = useCallback(async () => {
     const templateEx = exerciseFull
@@ -505,15 +570,33 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'exercise':
         return (
-          <View style={styles.workInner}>
-            <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
-            <Text style={styles.hintCenter}>
-              Сейчас: {FILL_BTN_LABELS[exerciseIndex]} ·{' '}
-              {currentExerciseReady
-                ? `5 из ${MAX_SETS} — нажмите ЗАПОЛНИЛ`
-                : `подход ${currentSetsCount + 1} из ${MAX_SETS}`}
-            </Text>
-            <View style={styles.tableWrapCompact}>
+          <View style={[styles.workInner, exerciseReveal && styles.workInnerReveal]}>
+            <Animated.View
+              style={[
+                styles.chromeBlock,
+                exerciseReveal && styles.chromeOverlayTop,
+                { opacity: chromeOpacity },
+              ]}
+              pointerEvents={exerciseReveal ? 'none' : 'auto'}
+            >
+              <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
+              <Text style={styles.hintCenter}>
+                Сейчас: {FILL_BTN_LABELS[exerciseIndex]} ·{' '}
+                {currentExerciseReady
+                  ? `5 из ${MAX_SETS} — нажмите ЗАПОЛНИЛ`
+                  : `подход ${currentSetsCount + 1} из ${MAX_SETS}`}
+              </Text>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.tableWrapCompact,
+                {
+                  opacity: tableOpacity,
+                  transform: [{ translateY: tableShift }, { scale: tableScale }],
+                },
+              ]}
+            >
               <WeekTable
                 variant="exercise"
                 weekDays={prevWeekDays}
@@ -521,32 +604,46 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 columns={buildExerciseColumns(exercisePreview)}
                 maxRows={MAX_SETS}
               />
-            </View>
-            <CounterControl
-              variant="exercise"
-              value={exerciseCounter}
-              onDecrement={() => setExerciseCounter((v) => Math.max(0, v - 1))}
-              onIncrement={() => setExerciseCounter((v) => v + 1)}
-              onValuePress={() => setPendingConfirm('exercise')}
-              onUndoLast={() => {}}
-              onArmUndo={() => {}}
-              okMode={currentExerciseReady ? 'disabled' : 'active'}
-              compact
-            />
-            <Pressable
+            </Animated.View>
+
+            <Animated.View
               style={[
-                styles.introPrimaryBtn,
-                { backgroundColor: FILL_BTN_COLORS[exerciseIndex] },
-                !currentExerciseReady && styles.primaryBtnDisabled,
+                styles.chromeBlock,
+                exerciseReveal && styles.chromeOverlayBottom,
+                { opacity: chromeOpacity },
               ]}
-              onPress={confirmCurrentExercise}
-              disabled={!currentExerciseReady || busy}
+              pointerEvents={exerciseReveal ? 'none' : 'auto'}
             >
-              <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={applyExerciseExample}>
-              <Text style={styles.secondaryBtnText}>Использовать пример</Text>
-            </Pressable>
+              <CounterControl
+                variant="exercise"
+                value={exerciseCounter}
+                onDecrement={() => setExerciseCounter((v) => Math.max(0, v - 1))}
+                onIncrement={() => setExerciseCounter((v) => v + 1)}
+                onValuePress={() => setPendingConfirm('exercise')}
+                onUndoLast={() => {}}
+                onArmUndo={() => {}}
+                okMode={currentExerciseReady || exerciseReveal ? 'disabled' : 'active'}
+                compact
+              />
+              <Pressable
+                style={[
+                  styles.introPrimaryBtn,
+                  { backgroundColor: FILL_BTN_COLORS[exerciseIndex] },
+                  (!currentExerciseReady || exerciseReveal) && styles.primaryBtnDisabled,
+                ]}
+                onPress={confirmCurrentExercise}
+                disabled={!currentExerciseReady || busy || exerciseReveal}
+              >
+                <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={applyExerciseExample}
+                disabled={exerciseReveal}
+              >
+                <Text style={styles.secondaryBtnText}>Использовать пример</Text>
+              </Pressable>
+            </Animated.View>
           </View>
         );
 
@@ -688,6 +785,29 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: GAP * 0.5,
+  },
+  workInnerReveal: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  chromeBlock: {
+    width: '100%',
+    alignItems: 'center',
+    gap: GAP * 0.5,
+  },
+  chromeOverlayTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+  },
+  chromeOverlayBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
   },
   introPrimaryBtn: {
     alignSelf: 'center',
