@@ -430,7 +430,11 @@ export function WeekTable({
               {weekCompare != null && (
                 <View style={styles.weekCompareStack}>
                   <Text
-                    style={[styles.weekComparePrev, styles.fontPast]}
+                    style={[
+                      styles.weekComparePrev,
+                      styles.fontPast,
+                      variant === 'exercise' && styles.weekComparePrevEx,
+                    ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.5}
@@ -441,6 +445,7 @@ export function WeekTable({
                     style={[
                       styles.weekCompareCurrent,
                       styles.fontCurrent,
+                      variant === 'exercise' && styles.weekCompareCurrentEx,
                       {
                         color: weekCompareColor(
                           variant,
@@ -693,6 +698,14 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     color: colors.textMuted,
     lineHeight: 8,
+  },
+  weekComparePrevEx: {
+    fontSize: 8,
+    lineHeight: 10,
+  },
+  weekCompareCurrentEx: {
+    fontSize: 9,
+    lineHeight: 11,
   },
   fontPast: {
     fontFamily: fonts.past,
