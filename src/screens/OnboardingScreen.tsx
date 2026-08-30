@@ -31,9 +31,11 @@ import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils
 import {
   DEFAULT_ONBOARDING_EXERCISE,
   DEFAULT_ONBOARDING_MEALS,
+  EXAMPLE_EXERCISE_BASE,
   PREV_WEEK_FOOD_COL,
   buildOnboardingPreviewWeek,
   buildPreviousWeekSeed,
+  randomizeExampleSets,
   spreadExerciseColumnToExtraDays,
 } from '../utils/onboardingSeed';
 
@@ -380,13 +382,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const mealsDone = mealsDraft.length >= 1;
 
   const applyExerciseExample = useCallback(() => {
+    const sets = randomizeExampleSets(EXAMPLE_EXERCISE_BASE);
     setExerciseDraft((prev) => {
       const next = cloneExercises(prev);
-      next[exerciseIndex] = [...DEFAULT_ONBOARDING_EXERCISE[exerciseIndex]];
+      next[exerciseIndex] = sets;
       return next;
     });
-    const example = DEFAULT_ONBOARDING_EXERCISE[exerciseIndex];
-    setExerciseCounter(example[example.length - 1] ?? example[0] ?? 4);
+    setExerciseCounter(sets[sets.length - 1] ?? sets[0] ?? 6);
   }, [exerciseIndex]);
 
   const applyFoodExample = useCallback(() => {

@@ -11,6 +11,9 @@ export const DEFAULT_ONBOARDING_EXERCISE: ExerciseColumns = [
   [2, 2, 2, 2, 4],
 ];
 
+/** База для кнопки «Использовать пример» */
+export const EXAMPLE_EXERCISE_BASE = [6, 6, 6, 6, 12];
+
 export const DEFAULT_ONBOARDING_MEALS = [250, 400, 500];
 
 function cloneExerciseColumns(exercises: ExerciseColumns): ExerciseColumns {
@@ -31,6 +34,20 @@ function randomInt(min: number, max: number): number {
 
 function varyRep(value: number): number {
   return Math.max(1, value + randomInt(-1, 1));
+}
+
+/** 5-й подход: база ±100%; первые 4 — случайно 50–60% от 5-го */
+export function randomizeExampleSets(
+  base: number[] = EXAMPLE_EXERCISE_BASE,
+): number[] {
+  const fifthBase = base[4] ?? 12;
+  const fifthFactor = Math.random() * 2; // 0 … 2 → ±100%
+  const fifth = Math.max(1, Math.round(fifthBase * fifthFactor));
+  const firstFour = Array.from({ length: 4 }, () => {
+    const ratio = 0.5 + Math.random() * 0.1; // 50–60%
+    return Math.max(1, Math.round(fifth * ratio));
+  });
+  return [...firstFour, fifth];
 }
 
 function varyGrams(value: number): number {
