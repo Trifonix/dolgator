@@ -9,6 +9,9 @@ import {
 import { colors } from '../theme/colors';
 
 const DOUBLE_TAP_MS = 320;
+/** Макс. пауза между тапами в «быстрой» серии для армирования undo */
+const RAPID_TAP_GAP_MS = 400;
+const ARM_UNDO_TAPS = 10;
 const UNDO_OK = '#ef9a9a';
 
 export type OkMode = 'active' | 'undo' | 'disabled';
@@ -19,6 +22,7 @@ interface CounterControlProps {
   onIncrement: () => void;
   onValuePress: () => void;
   onUndoLast: () => void;
+  onArmUndo: () => void;
   okMode: OkMode;
   variant: 'exercise' | 'food';
   compact?: boolean;
@@ -30,6 +34,7 @@ export function CounterControl({
   onIncrement,
   onValuePress,
   onUndoLast,
+  onArmUndo,
   okMode,
   variant,
   compact = false,
@@ -38,6 +43,7 @@ export function CounterControl({
   const btnSize = compact ? 40 : 52;
   const valueSize = compact ? 26 : 36;
   const pendingTap = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rapidCount = useRef(0);
 
   const valueColor =
     okMode === 'disabled'
@@ -52,13 +58,18 @@ export function CounterControl({
         ? UNDO_OK
         : palette.primary;
 
-  const handleOkPress = () => {
-    if (okMode === 'disabled') return;
+  const clearPending = () => {
+    if (pendingTap.current) {
+      clearTimeout(pendingTap.current);
+      pendingTap.current = null;
+    }
+  };
 
+  const handleOkPress = () => {
     if (okMode === 'undo') {
       if (pendingTap.current) {
-        clearTimeout(pendingTap.current);
-        pendingTap.current = null;
+        clearPending();
+        rapidCount.current = 0;
         onUndoLast();
         return;
       }
@@ -68,7 +79,24 @@ export function CounterControl({
       return;
     }
 
-    onValuePress();
+    // active или disabled: серия быстрых тапов → режим удаления на 60 с
+    rapidCount.current += 1;
+    clearPending();
+
+    if (rapidCount.current >= ARM_UNDO_TAPS) {
+      rapidCount.current = 0;
+      onArmUndo();
+      return;
+    }
+
+    const tapsSoFar = rapidCount.current;
+    pendingTap.current = setTimeout(() => {
+      pendingTap.current = null;
+      rapidCount.current = 0;
+      if (okMode === 'active' && tapsSoFar === 1) {
+        onValuePress();
+      }
+    }, RAPID_TAP_GAP_MS);
   };
 
   return (
@@ -88,15 +116,13 @@ export function CounterControl({
 
         <Pressable
           onPress={handleOkPress}
-          disabled={okMode === 'disabled'}
           style={({ pressed }) => [
             styles.valueBox,
             compact && styles.valueBoxCompact,
             { borderColor: valueBorder, shadowColor: okMode === 'undo' ? UNDO_OK : palette.glow },
             okMode === 'disabled' && styles.valueBoxDisabled,
             okMode === 'undo' && styles.valueBoxUndo,
-            okMode === 'active' && pressed && styles.valueBoxPressed,
-            okMode === 'undo' && pressed && styles.valueBoxPressed,
+            pressed && styles.valueBoxPressed,
           ]}
         >
           <Text style={[styles.value, { fontSize: valueSize, color: valueColor }]}>{value}</Text>

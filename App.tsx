@@ -171,12 +171,13 @@ function AppContent() {
                 onIncrement={() => tracker.adjustExercise(1)}
                 onValuePress={() => openSubmitDialog('exercise')}
                 onUndoLast={() => tracker.undoLastExercise()}
+                onArmUndo={() => tracker.armExerciseUndo()}
                 okMode={
-                  tracker.isExerciseDayFullToday
-                    ? tracker.exerciseUndoArmed
-                      ? 'undo'
-                      : 'disabled'
-                    : 'active'
+                  tracker.exerciseUndoArmed
+                    ? 'undo'
+                    : tracker.isExerciseDayFullToday
+                      ? 'disabled'
+                      : 'active'
                 }
                 compact
               />
@@ -202,12 +203,13 @@ function AppContent() {
                 onIncrement={() => tracker.adjustFood(10)}
                 onValuePress={() => openSubmitDialog('food')}
                 onUndoLast={() => tracker.undoLastFood()}
+                onArmUndo={() => tracker.armFoodUndo()}
                 okMode={
-                  tracker.isFoodDayFullToday
-                    ? tracker.foodUndoArmed
-                      ? 'undo'
-                      : 'disabled'
-                    : 'active'
+                  tracker.foodUndoArmed
+                    ? 'undo'
+                    : tracker.isFoodDayFullToday
+                      ? 'disabled'
+                      : 'active'
                 }
                 compact
               />

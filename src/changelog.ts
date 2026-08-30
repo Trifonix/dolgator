@@ -7,6 +7,13 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.22',
+    date: '2026-08-30',
+    items: [
+      '10 быстрых тапов по OK снова включают бледно-красный режим удаления на 60 с',
+    ],
+  },
+  {
     version: '0.1.21',
     date: '2026-08-30',
     items: [

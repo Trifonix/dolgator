@@ -147,6 +147,14 @@ export function useTrackerData() {
     }
   }, [state, todayKey, foodCounter, persist]);
 
+  const armExerciseUndo = useCallback(() => {
+    setExerciseUndoUntil(Date.now() + UNDO_WINDOW_MS);
+  }, []);
+
+  const armFoodUndo = useCallback(() => {
+    setFoodUndoUntil(Date.now() + UNDO_WINDOW_MS);
+  }, []);
+
   const undoLastExercise = useCallback(async () => {
     if (!state) return;
 
@@ -253,9 +261,8 @@ export function useTrackerData() {
 
   const isFoodDayFullToday = todayMealsCount >= MAX_MEALS;
 
-  const exerciseUndoArmed =
-    isExerciseDayFullToday && exerciseUndoUntil > clock;
-  const foodUndoArmed = isFoodDayFullToday && foodUndoUntil > clock;
+  const exerciseUndoArmed = exerciseUndoUntil > clock;
+  const foodUndoArmed = foodUndoUntil > clock;
 
   const weekExerciseData = weekKeys.map((key) => {
     if (!state) return { exercises: EMPTY_EXERCISES, sum: 0 };
@@ -347,6 +354,8 @@ export function useTrackerData() {
     submitFood,
     undoLastExercise,
     undoLastFood,
+    armExerciseUndo,
+    armFoodUndo,
     clearTodayExercise,
     clearTodayFood,
     currentExerciseLabel,
