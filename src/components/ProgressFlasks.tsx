@@ -6,7 +6,7 @@ import {
   FLASK_FOOD_WIDTH,
   FLASK_HEIGHT,
 } from '../theme/layout';
-import { flaskPulseAccent, type FlaskFill, type FlaskKind, type FoodFlaskFill } from '../utils/flaskMetrics';
+import { flaskPulseAccent, EXERCISE_BAND_LOW, EXERCISE_MARK_RATIO, type FlaskFill, type FlaskKind, type FoodFlaskFill } from '../utils/flaskMetrics';
 
 const TICK_GUTTER = 6;
 const PX = 2;
@@ -32,7 +32,7 @@ function useFillHeight(ratio: number, maxPx: number) {
   });
 }
 
-function useSmoothPulse(active: boolean) {
+function useSmoothPulse(active: boolean, phaseDelayMs: number) {
   const mix = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -43,28 +43,32 @@ function useSmoothPulse(active: boolean) {
     }
 
     const ease = Easing.inOut(Easing.sin);
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(mix, {
-          toValue: 1,
-          duration: 1800,
-          easing: ease,
-          useNativeDriver: false,
-        }),
-        Animated.timing(mix, {
-          toValue: 0,
-          duration: 1800,
-          easing: ease,
-          useNativeDriver: false,
-        }),
-      ]),
-    );
-    loop.start();
+    const half = Animated.sequence([
+      Animated.timing(mix, {
+        toValue: 1,
+        duration: 1800,
+        easing: ease,
+        useNativeDriver: false,
+      }),
+      Animated.timing(mix, {
+        toValue: 0,
+        duration: 1800,
+        easing: ease,
+        useNativeDriver: false,
+      }),
+    ]);
+    const loop = Animated.loop(half);
+    const starter = Animated.sequence([
+      Animated.delay(phaseDelayMs),
+      loop,
+    ]);
+    starter.start();
     return () => {
+      starter.stop();
       loop.stop();
       mix.setValue(0);
     };
-  }, [active, mix]);
+  }, [active, mix, phaseDelayMs]);
 
   return mix;
 }
@@ -73,12 +77,14 @@ function PulseLiquid({
   kind,
   fillRatio,
   height,
+  phaseDelayMs = 0,
 }: {
   kind: FlaskKind;
   fillRatio: number;
   height: Animated.AnimatedInterpolation<string | number>;
+  phaseDelayMs?: number;
 }) {
-  const mix = useSmoothPulse(fillRatio > 0);
+  const mix = useSmoothPulse(fillRatio > 0, phaseDelayMs);
   const accent = flaskPulseAccent(kind, fillRatio);
   const backgroundColor = mix.interpolate({
     inputRange: [0, 1],
@@ -127,7 +133,7 @@ function SideNotch({
   );
 }
 
-function ChamberLiquid({ fill }: { fill: FlaskFill }) {
+function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: number }) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
 
@@ -136,7 +142,12 @@ function ChamberLiquid({ fill }: { fill: FlaskFill }) {
       style={styles.chamber}
       onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
     >
-      <PulseLiquid kind="exercise" fillRatio={fill.fillRatio} height={fillHeight} />
+      <PulseLiquid
+        kind="exercise"
+        fillRatio={fill.fillRatio}
+        height={fillHeight}
+        phaseDelayMs={phaseIndex * 1200}
+      />
     </View>
   );
 }
@@ -146,12 +157,12 @@ interface ExerciseFlasksProps {
 }
 
 export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
-  const mark = fills[0];
-
   return (
     <View style={styles.exerciseFlask}>
-      <SideNotch side="left" markRatio={mark.markRatio} hasBaseline={mark.hasBaseline} />
-      <SideNotch side="right" markRatio={mark.markRatio} hasBaseline={mark.hasBaseline} />
+      <SideNotch side="left" markRatio={EXERCISE_BAND_LOW} hasBaseline />
+      <SideNotch side="right" markRatio={EXERCISE_BAND_LOW} hasBaseline />
+      <SideNotch side="left" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
+      <SideNotch side="right" markRatio={EXERCISE_MARK_RATIO} hasBaseline />
       <View
         style={[
           styles.body,
@@ -159,7 +170,7 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
         ]}
       >
         {fills.map((fill, idx) => (
-          <ChamberLiquid key={idx} fill={fill} />
+          <ChamberLiquid key={idx} fill={fill} phaseIndex={idx} />
         ))}
         <View pointerEvents="none" style={[styles.partition, { left: '33.333%' }]} />
         <View pointerEvents="none" style={[styles.partition, { left: '66.666%' }]} />

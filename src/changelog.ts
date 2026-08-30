@@ -7,6 +7,14 @@ export interface ChangelogEntry {
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.16',
+    date: '2026-08-30',
+    items: [
+      'Левая колба: засечки 60% и 80%, каналы мигают со сдвигом фазы',
+      'Заливка почти белая для контраста с тёмным фоном',
+    ],
+  },
+  {
     version: '0.1.15',
     date: '2026-08-30',
     items: [

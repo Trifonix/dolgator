@@ -2,6 +2,8 @@ import { AppState, DayRecord, ExerciseColumns } from '../types';
 import { MAX_SETS } from '../theme/colors';
 import { getDayExercises, getDayRecord, sumMealsDay } from '../storage/storage';
 
+/** Нижняя засечка зоны поддержки (жёлтый диапазон) */
+export const EXERCISE_BAND_LOW = 0.6;
 /** Черта на колбе упражнений: объём прошлой недели = 80% высоты */
 export const EXERCISE_MARK_RATIO = 0.8;
 
@@ -13,8 +15,8 @@ export type FlaskKind = 'exercise' | 'food';
 /** Акцент мигания по высоте заливки колбы */
 export function flaskPulseAccent(kind: FlaskKind, fillRatio: number): string {
   if (kind === 'exercise') {
-    if (fillRatio >= 0.8) return '#66bb6a';
-    if (fillRatio >= 0.6) return '#ffd54f';
+    if (fillRatio >= EXERCISE_MARK_RATIO) return '#66bb6a';
+    if (fillRatio >= EXERCISE_BAND_LOW) return '#ffd54f';
     return '#ef5350';
   }
   if (fillRatio >= 0.98) return '#ef5350';
