@@ -18,7 +18,10 @@ export const colors = {
     text: '#80deea',
   },
 
-  /** Стартовые intro-экраны (не упражнения и не еда) */
+  /** Название приложения в полосе версии */
+  brand: {
+    primary: '#9bff6a',
+  },
   intro: {
     primary: '#ffd54f',
     dim: '#c6a01e',

@@ -196,17 +196,20 @@ function AppContent() {
               />
               <View style={styles.versionRow}>
                 <View style={styles.versionLine} />
-                <Text style={styles.versionText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
-                  <Text style={styles.versionAppName}>{APP_NAME} </Text>
-                  <Text style={styles.versionNumber}>v{APP_VERSION}</Text>
-                  <Text style={styles.versionDate}> - {formatLastCommit(LAST_COMMIT_AT)} - </Text>
+                <View style={styles.versionText}>
+                  <Text style={styles.versionAppName}>{APP_NAME}</Text>
+                  <View style={styles.versionPair}>
+                    <Text style={styles.versionV}>v</Text>
+                    <Text style={styles.versionNumber}>{APP_VERSION}</Text>
+                  </View>
+                  <Text style={styles.versionDate}>{formatLastCommit(LAST_COMMIT_AT)}</Text>
                   <Text
                     style={styles.versionAuthor}
                     onPress={() => Linking.openURL(DEVELOPER_URL)}
                   >
                     {DEVELOPER_NAME}
                   </Text>
-                </Text>
+                </View>
                 <View style={styles.versionLine} />
               </View>
               <CounterControl
@@ -297,37 +300,54 @@ const styles = StyleSheet.create({
   versionRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginVertical: 0,
-    gap: 6,
+    gap: 4,
   },
   versionLine: {
-    flex: 1,
+    width: 8,
+    flexGrow: 0,
+    flexShrink: 0,
     height: 1,
     backgroundColor: colors.border,
     opacity: 0.4,
   },
   versionText: {
-    fontSize: 9,
-    opacity: 0.9,
-    flexShrink: 0,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
   },
   versionAppName: {
-    color: colors.exercise.primary,
+    color: colors.brand.primary,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  versionPair: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  versionV: {
+    color: '#ff8a3d',
+    fontSize: 9,
     fontWeight: '700',
   },
   versionNumber: {
-    color: colors.food.primary,
+    color: '#f2f2f6',
+    fontSize: 9,
     fontWeight: '700',
   },
   versionDate: {
     color: colors.textMuted,
+    fontSize: 9,
     fontWeight: '500',
   },
   versionAuthor: {
-    color: '#ffd54f',
+    color: colors.intro.primary,
+    fontSize: 9,
     fontWeight: '700',
-    textShadowColor: 'rgba(255, 213, 79, 0.9)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
   },
 });
