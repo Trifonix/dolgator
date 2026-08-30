@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, EXERCISE_COLUMN_COLORS } from '../theme/colors';
 import {
   FLASK_EXERCISE_WIDTH,
   FLASK_FOOD_WIDTH,
@@ -33,7 +33,7 @@ function useFillHeight(ratio: number, maxPx: number) {
 }
 
 function useSmoothPulse(active: boolean, phaseDelayMs: number) {
-  const mix = useRef(new Animated.Value(0)).current;
+  const mix = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!active) {
@@ -43,21 +43,23 @@ function useSmoothPulse(active: boolean, phaseDelayMs: number) {
     }
 
     const ease = Easing.inOut(Easing.sin);
-    const half = Animated.sequence([
+    mix.setValue(1);
+    const beat = Animated.sequence([
+      Animated.delay(2000),
       Animated.timing(mix, {
-        toValue: 1,
-        duration: 1800,
+        toValue: 0,
+        duration: 500,
         easing: ease,
         useNativeDriver: false,
       }),
       Animated.timing(mix, {
-        toValue: 0,
-        duration: 1800,
+        toValue: 1,
+        duration: 500,
         easing: ease,
         useNativeDriver: false,
       }),
     ]);
-    const loop = Animated.loop(half);
+    const loop = Animated.loop(beat);
     const starter = Animated.sequence([
       Animated.delay(phaseDelayMs),
       loop,
@@ -66,7 +68,7 @@ function useSmoothPulse(active: boolean, phaseDelayMs: number) {
     return () => {
       starter.stop();
       loop.stop();
-      mix.setValue(0);
+      mix.setValue(1);
     };
   }, [active, mix, phaseDelayMs]);
 
@@ -79,18 +81,20 @@ function PulseLiquid({
   height,
   phaseDelayMs = 0,
   pulseRatio,
+  idleColor,
 }: {
   kind: FlaskKind;
   fillRatio: number;
   height: Animated.AnimatedInterpolation<string | number>;
   phaseDelayMs?: number;
   pulseRatio?: number;
+  idleColor: string;
 }) {
   const mix = useSmoothPulse(fillRatio > 0, phaseDelayMs);
   const accent = flaskPulseAccent(kind, pulseRatio ?? fillRatio);
   const backgroundColor = mix.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.flaskLiquid, accent],
+    outputRange: [idleColor, accent],
   });
 
   return (
@@ -153,6 +157,7 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
         fillRatio={fill.fillRatio}
         height={fillHeight}
         phaseDelayMs={phaseIndex * 1200}
+        idleColor={EXERCISE_COLUMN_COLORS[phaseIndex]}
       />
     </View>
   );
@@ -204,7 +209,13 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
         ]}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
       >
-        <PulseLiquid kind="food" fillRatio={fill.fillRatio} pulseRatio={fill.pulseRatio} height={fillHeight} />
+        <PulseLiquid
+          kind="food"
+          fillRatio={fill.fillRatio}
+          pulseRatio={fill.pulseRatio}
+          height={fillHeight}
+          idleColor={colors.food.primary}
+        />
       </View>
     </View>
   );
