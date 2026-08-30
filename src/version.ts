@@ -6,13 +6,13 @@
  *    и добавить запись в CHANGELOG.md и src/changelog.ts (см. .cursor/rules/release-changelog.mdc)
  */
 export const APP_NAME = 'Dolgator';
-export const APP_VERSION = '1.0.6';
+export const APP_VERSION = '1.0.7';
 
 export const DEVELOPER_NAME = 'Trifonix';
 export const DEVELOPER_URL = 'https://t.me/trifonixwebsites';
 
 /** Дата и время последнего коммита (ISO 8601) */
-export const LAST_COMMIT_AT = '2026-08-30T20:50:00+03:00';
+export const LAST_COMMIT_AT = '2026-08-30T21:55:00+03:00';
 
 export function formatLastCommit(dateIso: string): string {
   const d = new Date(dateIso);

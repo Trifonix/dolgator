@@ -46,6 +46,17 @@ export function getChangelogSections(entry: ChangelogEntry): ChangelogSection[] 
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.7',
+    date: '2026-08-30',
+    features: [
+      'Долгое нажатие на таблицу: режим отмены OK, двойной тап по OK удаляет последнюю запись',
+      'Колбы: двухцветная дымка сзади (фиолетовый / голубой, как на иконке)',
+    ],
+    patches: [
+      'Подписи ПОВТОРЫ и ГРАММЫ: бледные цвета и выравнивание по высоте колбы',
+    ],
+  },
+  {
     version: '1.0.6',
     date: '2026-08-30',
     features: [
