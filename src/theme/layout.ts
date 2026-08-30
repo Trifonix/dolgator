@@ -11,8 +11,9 @@ export const REF_HEIGHT = 640;
 
 /** Фиксированная высота колб — как два ряда счётчиков */
 export const FLASK_HEIGHT = 100;
-export const FLASK_EXERCISE_WIDTH = 38;
-export const FLASK_FOOD_WIDTH = 16;
+/** Общая ширина сосуда повторений и граммов */
+export const FLASK_EXERCISE_WIDTH = 27;
+export const FLASK_FOOD_WIDTH = 27;
 
 /** Счётчики в центральной колонке (эталон REF_WIDTH) */
 export const CENTER_SIDE_BTN = 40;
