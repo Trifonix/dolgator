@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   LayoutChangeEvent,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -12,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { CounterControl } from '../components/CounterControl';
-import { TypewriterText } from '../components/TypewriterText';
 import {
   WeekTable,
   buildExerciseColumns,
@@ -75,7 +73,7 @@ const FILL_BTN_COLORS = EXERCISE_COLUMN_COLORS;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДНЫЕ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
 const MIN_FOOD_MEALS = 1;
-const INTRO_FADE_MS = 320;
+const INTRO_FADE_MS = 380;
 const SPREAD_STEP_MS = 260;
 
 function IntroActStep({
@@ -92,7 +90,6 @@ function IntroActStep({
   buttonColor = colors.intro.dim,
   darkLabel = false,
   onAction,
-  onTypingComplete,
   canProceed,
   busy,
 }: {
@@ -109,106 +106,59 @@ function IntroActStep({
   buttonColor?: string;
   darkLabel?: boolean;
   onAction: () => void;
-  onTypingComplete: () => void;
   canProceed: boolean;
   busy: boolean;
 }) {
-  const [title1Done, setTitle1Done] = useState(false);
-  const [titleDone, setTitleDone] = useState(false);
-  const [p1Done, setP1Done] = useState(false);
-  const [blockDone, setBlockDone] = useState(0);
-  const extraCount = extraBlocks?.length ?? 0;
-  const extrasFinished = extraCount === 0 || blockDone >= extraCount;
-  const showControls = p1Done && extrasFinished;
   const headingColor = titleColor ?? accentColor;
   const barColor = groupAccentColor ?? accentColor;
 
   return (
     <View style={styles.introInner}>
-      <TypewriterText
-        text={title}
-        style={[styles.leadCenter, { color: headingColor }]}
-        cursorColor={headingColor}
-        speed={42}
-        active
-        onComplete={() => {
-          if (titleSecondLine) setTitle1Done(true);
-          else setTitleDone(true);
-        }}
-      />
+      <Text style={[styles.leadCenter, { color: headingColor }]}>{title}</Text>
       {titleSecondLine ? (
-        <TypewriterText
-          text={titleSecondLine}
-          style={[styles.leadCenter, styles.leadSecondLine, { color: accentColor }]}
-          cursorColor={accentColor}
-          speed={42}
-          active={title1Done}
-          onComplete={() => setTitleDone(true)}
-        />
+        <Text style={[styles.leadCenter, styles.leadSecondLine, { color: accentColor }]}>
+          {titleSecondLine}
+        </Text>
       ) : null}
-      <TypewriterText
-        text={paragraph1}
-        style={styles.paragraphCenter}
-        cursorColor={accentColor}
-        speed={22}
-        active={titleDone}
-        onComplete={() => setP1Done(true)}
-      />
-      {extraBlocks?.map((block, idx) => {
-        const blockActive = p1Done && blockDone >= idx;
-        return (
-          <View
-            key={block.text}
-            style={[
-              block.variant === 'note' ? styles.noteBlock : styles.groupBlock,
-              block.variant !== 'note' && { borderLeftColor: barColor },
-              !blockActive && styles.reservedHidden,
-            ]}
-          >
-            <TypewriterText
-              text={block.text}
-              style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}
-              cursorColor={accentColor}
-              speed={28}
-              active={blockActive}
-              onComplete={() => setBlockDone((n) => Math.max(n, idx + 1))}
-            />
-          </View>
-        );
-      })}
+      <Text style={styles.paragraphCenter}>{paragraph1}</Text>
+      {extraBlocks?.map((block) => (
+        <View
+          key={block.text}
+          style={[
+            block.variant === 'note' ? styles.noteBlock : styles.groupBlock,
+            block.variant !== 'note' && { borderLeftColor: barColor },
+          ]}
+        >
+          <Text style={block.variant === 'note' ? styles.noteBlockText : styles.groupBlockText}>
+            {block.text}
+          </Text>
+        </View>
+      ))}
       <Pressable
         style={[
           styles.introPrimaryBtn,
           { backgroundColor: buttonColor },
-          (!showControls || !canProceed || busy) && styles.primaryBtnDisabled,
-          !showControls && styles.introPrimaryBtnHidden,
+          (!canProceed || busy) && styles.primaryBtnDisabled,
         ]}
         onPress={onAction}
-        disabled={!showControls || !canProceed || busy}
+        disabled={!canProceed || busy}
       >
         <Text style={[styles.primaryBtnText, darkLabel && styles.primaryBtnTextDark]}>
           {canProceed ? buttonLabel : '…'}
         </Text>
       </Pressable>
-      <TypewriterText
-        text={paragraph2}
-        style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}
-        cursorColor={accentColor}
-        speed={22}
-        active={showControls}
-        onComplete={onTypingComplete}
-      />
+      <Text style={paragraph2Muted ? styles.paragraphCenterMuted : styles.paragraphCenter}>
+        {paragraph2}
+      </Text>
     </View>
   );
 }
 
 function WelcomeStep({
-  onTypingComplete,
   onStart,
   canStart,
   busy,
 }: {
-  onTypingComplete: () => void;
   onStart: () => void;
   canStart: boolean;
   busy: boolean;
@@ -221,7 +171,6 @@ function WelcomeStep({
       buttonLabel="НАЧАТЬ"
       darkLabel
       onAction={onStart}
-      onTypingComplete={onTypingComplete}
       canProceed={canStart}
       busy={busy}
     />
@@ -229,12 +178,10 @@ function WelcomeStep({
 }
 
 function ExerciseIntroStep({
-  onTypingComplete,
   onContinue,
   canContinue,
   busy,
 }: {
-  onTypingComplete: () => void;
   onContinue: () => void;
   canContinue: boolean;
   busy: boolean;
@@ -252,7 +199,6 @@ function ExerciseIntroStep({
       buttonLabel="ТАБЛИЦА"
       darkLabel
       onAction={onContinue}
-      onTypingComplete={onTypingComplete}
       canProceed={canContinue}
       busy={busy}
     />
@@ -260,12 +206,10 @@ function ExerciseIntroStep({
 }
 
 function FoodIntroStep({
-  onTypingComplete,
   onContinue,
   canContinue,
   busy,
 }: {
-  onTypingComplete: () => void;
   onContinue: () => void;
   canContinue: boolean;
   busy: boolean;
@@ -283,7 +227,6 @@ function FoodIntroStep({
       buttonLabel="ТАБЛИЦА"
       darkLabel
       onAction={onContinue}
-      onTypingComplete={onTypingComplete}
       canProceed={canContinue}
       busy={busy}
     />
@@ -340,7 +283,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [introReady, setIntroReady] = useState(false);
   const [tableReveal, setTableReveal] = useState(false);
   const [spreadBusy, setSpreadBusy] = useState(false);
-  const introOpacity = useRef(new Animated.Value(1)).current;
+  const introOpacity = useRef(new Animated.Value(0)).current;
   const introSlide = useRef(new Animated.Value(0)).current;
   const introTransitioning = useRef(false);
   const chromeOpacity = useRef(new Animated.Value(1)).current;
@@ -365,6 +308,39 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     };
   }, []);
 
+  const playIntroFadeIn = useCallback(
+    (onDone?: () => void) => {
+      introSlide.setValue(14);
+      introOpacity.setValue(0);
+      Animated.parallel([
+        Animated.timing(introOpacity, {
+          toValue: 1,
+          duration: INTRO_FADE_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.timing(introSlide, {
+          toValue: 0,
+          duration: INTRO_FADE_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) {
+          introOpacity.setValue(1);
+          introSlide.setValue(0);
+          onDone?.();
+        }
+      });
+    },
+    [introOpacity, introSlide],
+  );
+
+  useEffect(() => {
+    if (step !== 'welcome') return;
+    playIntroFadeIn(() => setIntroReady(true));
+  }, [playIntroFadeIn, step]);
+
   const goToStep = useCallback((next: Step, options?: { skipFadeOut?: boolean }) => {
     if (introTransitioning.current) return;
     introTransitioning.current = true;
@@ -373,54 +349,46 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       introTransitioning.current = false;
     };
 
-    const applyStep = () => {
+    if (options?.skipFadeOut) {
       setStep(next);
-      introSlide.setValue(0);
-      introOpacity.setValue(1);
-      unlock();
-    };
-
-    // На Android/iOS fade через native driver часто «застревает» на opacity 0 — чёрный экран.
-    if (Platform.OS !== 'web' || options?.skipFadeOut) {
-      applyStep();
+      if (INTRO_ACTS.includes(next)) {
+        playIntroFadeIn(() => {
+          setIntroReady(true);
+          unlock();
+        });
+      } else {
+        introSlide.setValue(0);
+        introOpacity.setValue(1);
+        unlock();
+      }
       return;
     }
-
-    const fadeIn = () => {
-      setStep(next);
-      introSlide.setValue(22);
-      introOpacity.setValue(0);
-      Animated.parallel([
-        Animated.timing(introOpacity, {
-          toValue: 1,
-          duration: INTRO_FADE_MS + 100,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(introSlide, {
-          toValue: 0,
-          duration: INTRO_FADE_MS + 100,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start(unlock);
-    };
 
     Animated.parallel([
       Animated.timing(introOpacity, {
         toValue: 0,
         duration: INTRO_FADE_MS,
         easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
       Animated.timing(introSlide, {
-        toValue: -22,
+        toValue: -14,
         duration: INTRO_FADE_MS,
         easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
+        useNativeDriver: false,
       }),
-    ]).start(fadeIn);
-  }, [introOpacity, introSlide]);
+    ]).start(({ finished }) => {
+      if (!finished) {
+        unlock();
+        return;
+      }
+      setStep(next);
+      playIntroFadeIn(() => {
+        setIntroReady(true);
+        unlock();
+      });
+    });
+  }, [introOpacity, introSlide, playIntroFadeIn]);
 
   const pulseTableUpdate = useCallback(() => {
     tableOpacity.setValue(1);
@@ -662,7 +630,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     if (step === 'welcome') {
       return (
         <WelcomeStep
-          onTypingComplete={() => setIntroReady(true)}
           onStart={() => goToStep('exercise-intro')}
           canStart={introReady}
           busy={busy}
@@ -672,7 +639,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     if (step === 'exercise-intro') {
       return (
         <ExerciseIntroStep
-          onTypingComplete={() => setIntroReady(true)}
           onContinue={() => goToStep('exercise')}
           canContinue={introReady}
           busy={busy}
@@ -681,7 +647,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     }
     return (
       <FoodIntroStep
-        onTypingComplete={() => setIntroReady(true)}
         onContinue={() => goToStep('food')}
         canContinue={introReady}
         busy={busy}
@@ -962,12 +927,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.intro.dim,
     alignItems: 'center',
     marginVertical: GAP * 0.25,
-  },
-  introPrimaryBtnHidden: {
-    opacity: 0,
-  },
-  reservedHidden: {
-    opacity: 0,
   },
   leadCenter: {
     color: colors.intro.primary,
