@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { colors, EXERCISE_COLUMN_COLORS } from '../theme/colors';
+import { Animated, StyleSheet, View } from 'react-native';
+import { colors } from '../theme/colors';
 import {
   FLASK_EXERCISE_WIDTH,
   FLASK_FOOD_WIDTH,
@@ -32,47 +32,94 @@ function useFillHeight(ratio: number, maxPx: number) {
   });
 }
 
+const PULSE_HOLD_MS = 3000;
+const PULSE_FLASH_MS = 1000;
+const PULSE_CYCLE_MS = PULSE_HOLD_MS + PULSE_FLASH_MS;
+
 function useSmoothPulse(active: boolean, phaseDelayMs: number) {
-  const mix = useRef(new Animated.Value(1)).current;
+  const mix = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!active) {
-      mix.stopAnimation();
-      mix.setValue(0);
-      return;
-    }
+    mix.stopAnimation();
+    mix.setValue(0);
+    if (!active) return;
 
-    const ease = Easing.inOut(Easing.sin);
-    mix.setValue(1);
-    const beat = Animated.sequence([
-      Animated.delay(2000),
-      Animated.timing(mix, {
-        toValue: 0,
-        duration: 500,
-        easing: ease,
-        useNativeDriver: false,
-      }),
-      Animated.timing(mix, {
-        toValue: 1,
-        duration: 500,
-        easing: ease,
-        useNativeDriver: false,
-      }),
-    ]);
-    const loop = Animated.loop(beat);
-    const starter = Animated.sequence([
-      Animated.delay(phaseDelayMs),
-      loop,
-    ]);
-    starter.start();
+    let raf = 0;
+    const origin = Date.now() + phaseDelayMs;
+
+    const tick = () => {
+      const elapsed = Math.max(0, Date.now() - origin);
+      const t = elapsed % PULSE_CYCLE_MS;
+      if (t < PULSE_HOLD_MS) {
+        mix.setValue(0);
+      } else {
+        const u = (t - PULSE_HOLD_MS) / PULSE_FLASH_MS;
+        mix.setValue(Math.sin(u * Math.PI));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
     return () => {
-      starter.stop();
-      loop.stop();
-      mix.setValue(1);
+      cancelAnimationFrame(raf);
+      mix.setValue(0);
     };
   }, [active, mix, phaseDelayMs]);
 
   return mix;
+}
+
+const WAVE_BARS = 8;
+
+function WaveSurface({
+  active,
+  delayMs,
+  color,
+}: {
+  active: boolean;
+  delayMs: number;
+  color: Animated.AnimatedInterpolation<string | number>;
+}) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setPhase(0);
+      return;
+    }
+
+    let raf = 0;
+    let last = 0;
+    const origin = Date.now() + (delayMs % 500);
+
+    const tick = () => {
+      const now = Date.now();
+      if (now - last >= 40) {
+        last = now;
+        setPhase(((now - origin) / 1000) * Math.PI * 2 * 0.85);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, delayMs]);
+
+  if (!active) return null;
+
+  return (
+    <View style={styles.waveClip} pointerEvents="none">
+      <View style={styles.waveRow}>
+        {Array.from({ length: WAVE_BARS }, (_, i) => {
+          const h = 1.2 + 3 * (0.5 + 0.5 * Math.sin(phase + i * 0.82));
+          return (
+            <Animated.View
+              key={i}
+              style={[styles.waveBar, { height: h, backgroundColor: color }]}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 function PulseLiquid({
@@ -81,25 +128,28 @@ function PulseLiquid({
   height,
   phaseDelayMs = 0,
   pulseRatio,
-  idleColor,
 }: {
   kind: FlaskKind;
   fillRatio: number;
   height: Animated.AnimatedInterpolation<string | number>;
   phaseDelayMs?: number;
   pulseRatio?: number;
-  idleColor: string;
 }) {
   const mix = useSmoothPulse(fillRatio > 0, phaseDelayMs);
   const accent = flaskPulseAccent(kind, pulseRatio ?? fillRatio);
   const backgroundColor = mix.interpolate({
     inputRange: [0, 1],
-    outputRange: [idleColor, accent],
+    outputRange: [colors.flaskLiquid, accent],
   });
 
   return (
     <Animated.View style={[styles.liquid, { height }]}>
       <Animated.View style={[styles.liquidFill, { backgroundColor }]} />
+      <WaveSurface
+        active={fillRatio > 0.04}
+        delayMs={phaseDelayMs}
+        color={backgroundColor}
+      />
     </Animated.View>
   );
 }
@@ -157,7 +207,6 @@ function ChamberLiquid({ fill, phaseIndex }: { fill: FlaskFill; phaseIndex: numb
         fillRatio={fill.fillRatio}
         height={fillHeight}
         phaseDelayMs={phaseIndex * 1200}
-        idleColor={EXERCISE_COLUMN_COLORS[phaseIndex]}
       />
     </View>
   );
@@ -214,7 +263,6 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
           fillRatio={fill.fillRatio}
           pulseRatio={fill.pulseRatio}
           height={fillHeight}
-          idleColor={colors.food.primary}
         />
       </View>
     </View>
@@ -288,9 +336,28 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: -2,
+    overflow: 'visible',
+    zIndex: 1,
   },
   liquidFill: {
     flex: 1,
+  },
+  waveClip: {
+    position: 'absolute',
+    top: -5,
+    left: 0,
+    right: 0,
+    height: 5,
+  },
+  waveRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  waveBar: {
+    flex: 1,
+    borderTopLeftRadius: 1,
+    borderTopRightRadius: 1,
   },
   notch: {
     position: 'absolute',

@@ -34,8 +34,8 @@ export const colors = {
   compareBad: '#ef5350',
   /** Призрак прошлой недели в таблице текущей */
   ghostText: 'rgba(136, 136, 160, 0.42)',
-  /** Почти белая заливка колб — контраст с тёмным фоном */
-  flaskLiquid: '#f0f0f6',
+  /** Базовая заливка колб — «значения», слоновая кость */
+  flaskLiquid: '#efe6c8',
   border: '#2a2a3a',
   borderGlowExercise: 'rgba(224, 64, 251, 0.4)',
   borderGlowFood: 'rgba(0, 212, 255, 0.4)',
