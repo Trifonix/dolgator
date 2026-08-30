@@ -1,7 +1,46 @@
 export interface ChangelogEntry {
   version: string;
   date: string;
+  /** До 1.0.4 — плоский список. Новые версии — patches / features / global. */
+  items?: string[];
+  /** Исправления багов, мелкие правки, perf без нового поведения */
+  patches?: string[];
+  /** Новое пользовательское поведение */
+  features?: string[];
+  /** Крупные изменения: экраны, архитектура, редизайн, alpha/beta */
+  global?: string[];
+}
+
+export type ChangelogSection = {
+  label: string;
   items: string[];
+};
+
+/** Секции записи для UI и релизных заметок (старые версии — один блок без заголовка). */
+export function getChangelogSections(entry: ChangelogEntry): ChangelogSection[] {
+  const categorized =
+    (entry.global?.length ?? 0) > 0
+    || (entry.features?.length ?? 0) > 0
+    || (entry.patches?.length ?? 0) > 0;
+
+  if (categorized) {
+    const sections: ChangelogSection[] = [];
+    if (entry.global?.length) {
+      sections.push({ label: 'Глобальные обновления', items: entry.global });
+    }
+    if (entry.features?.length) {
+      sections.push({ label: 'Фичи', items: entry.features });
+    }
+    if (entry.patches?.length) {
+      sections.push({ label: 'Патчи', items: entry.patches });
+    }
+    return sections;
+  }
+
+  if (entry.items?.length) {
+    return [{ label: '', items: entry.items }];
+  }
+  return [];
 }
 
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */

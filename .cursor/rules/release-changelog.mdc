@@ -1,0 +1,46 @@
+---
+description: Правила релиза — версия, changelog по категориям, сборка APK
+alwaysApply: true
+---
+
+# Релиз Dolgator: версия, changelog, APK
+
+При запросе «новая версия», «релиз», «собери apk»:
+
+## 1. Версия
+
+- `app.json`: `expo.version` (semver) и `android.versionCode` (+1)
+- `package.json`: `version`
+- `src/version.ts`: `APP_VERSION`, `LAST_COMMIT_AT` (ISO 8601, UTC+3)
+
+## 2. Changelog из коммитов
+
+Смотри `git log` от **последнего Release-коммита** до HEAD. Каждый смысловой пункт — в **одну** категорию:
+
+| Поле в `src/changelog.ts` | Заголовок в CHANGELOG.md | Содержание |
+|---------------------------|--------------------------|------------|
+| `global` | ### Глобальные обновления | Крупные изменения: новые экраны/потоки, архитектура, редизайн, alpha/beta |
+| `features` | ### Фичи | Новое поведение для пользователя |
+| `patches` | ### Патчи | Баги, мелкие UX-правки, perf без нового поведения |
+
+- Пиши по-русски, кратко, по сути (не копируй subject коммита дословно).
+- Пустые секции не добавляй.
+- Дублируй в `CHANGELOG.md` и `src/changelog.ts` (новые версии — только `global` / `features` / `patches`, без `items`).
+- Старые записи с `items` не переписывай.
+
+Пример `src/changelog.ts`:
+
+```typescript
+{
+  version: '1.0.4',
+  date: '2026-08-30',
+  features: ['Цвет −/OK/+ по текущему упражнению в тренировочный день'],
+  patches: ['Колбы: волна без подвисания на Android'],
+}
+```
+
+## 3. Коммит и сборка
+
+- Коммит: `Release X.Y.Z: краткое резюме.`
+- `git push origin main`
+- `npm run build:apk` (при 403 — повторить)

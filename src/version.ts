@@ -1,8 +1,9 @@
 /**
- * Версия приложения. При каждом коммите:
- * 1. Повысить APP_VERSION (semver: 0.1.0 → 0.1.1 → 0.2.0 …)
- * 2. Обновить LAST_COMMIT_AT (дата/время коммита, ISO 8601)
- * 3. Добавить запись в CHANGELOG.md и src/changelog.ts
+ * Версия приложения. При релизе (новая версия + APK):
+ * 1. Повысить APP_VERSION (semver) и android.versionCode в app.json
+ * 2. Обновить LAST_COMMIT_AT (ISO 8601)
+ * 3. Разобрать коммиты с прошлого релиза на патчи / фичи / глобальные обновления
+ *    и добавить запись в CHANGELOG.md и src/changelog.ts (см. .cursor/rules/release-changelog.mdc)
  */
 export const APP_NAME = 'Dolgator';
 export const APP_VERSION = '1.0.3';

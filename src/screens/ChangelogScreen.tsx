@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CHANGELOG } from '../changelog';
+import { CHANGELOG, getChangelogSections } from '../changelog';
 import { colors } from '../theme/colors';
 import { GAP } from '../theme/layout';
 import { APP_VERSION, formatLastCommit, LAST_COMMIT_AT } from '../version';
@@ -37,10 +37,17 @@ export function ChangelogScreen({ onClose }: ChangelogScreenProps) {
               {entry.version}
               <Text style={styles.date}> · {entry.date}</Text>
             </Text>
-            {entry.items.map((item) => (
-              <Text key={item} style={styles.item}>
-                · {item}
-              </Text>
+            {getChangelogSections(entry).map((section) => (
+              <View key={section.label || 'items'} style={styles.section}>
+                {section.label ? (
+                  <Text style={styles.sectionTitle}>{section.label}</Text>
+                ) : null}
+                {section.items.map((item) => (
+                  <Text key={item} style={styles.item}>
+                    · {item}
+                  </Text>
+                ))}
+              </View>
             ))}
           </View>
         ))}
@@ -86,6 +93,17 @@ const styles = StyleSheet.create({
   },
   entry: {
     gap: 6,
+  },
+  section: {
+    gap: 4,
+  },
+  sectionTitle: {
+    color: colors.intro.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 2,
   },
   version: {
     color: colors.food.primary,

@@ -58,6 +58,13 @@ APK скачивается по ссылке из терминала или на
 - `src/version.ts`, `src/changelog.ts`, `CHANGELOG.md`
 - `app.json` → `version` и `android.versionCode` (+1)
 
+Запись в changelog — **по категориям** (разбор коммитов с прошлого релиза):
+- **Глобальные обновления** — экраны, архитектура, редизайн
+- **Фичи** — новое поведение
+- **Патчи** — баги и мелкие правки
+
+Подробнее: шапка `CHANGELOG.md` и `.cursor/rules/release-changelog.mdc`.
+
 Локальная сборка (нужны JDK 17 + Android Studio):
 
 ```bash
