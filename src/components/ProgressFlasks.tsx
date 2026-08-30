@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/fonts';
 import {
@@ -70,6 +70,21 @@ function useSmoothPulse(active: boolean, phaseDelayMs: number) {
 }
 
 const WAVE_BARS = 8;
+const WAVE_PERIOD_MS = 2800;
+const WAVE_OMEGA = Math.PI * 2 * 0.85;
+
+function waveBarHeight(phase: Animated.Value, barIndex: number) {
+  const steps = 16;
+  const inputRange: number[] = [];
+  const outputRange: number[] = [];
+  for (let s = 0; s <= steps; s += 1) {
+    const t = s / steps;
+    inputRange.push(t);
+    const rad = t * WAVE_OMEGA + barIndex * 0.82;
+    outputRange.push(1.2 + 3 * (0.5 + 0.5 * Math.sin(rad)));
+  }
+  return phase.interpolate({ inputRange, outputRange });
+}
 
 function WaveSurface({
   active,
@@ -80,44 +95,44 @@ function WaveSurface({
   delayMs: number;
   color: Animated.AnimatedInterpolation<string | number>;
 }) {
-  const [phase, setPhase] = useState(0);
+  const phase = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!active) {
-      setPhase(0);
-      return;
-    }
+    phase.stopAnimation();
+    phase.setValue(0);
+    if (!active) return;
 
-    let raf = 0;
-    let last = 0;
-    const origin = Date.now() + (delayMs % 500);
-
-    const tick = () => {
-      const now = Date.now();
-      if (now - last >= 40) {
-        last = now;
-        setPhase(((now - origin) / 1000) * Math.PI * 2 * 0.85);
-      }
-      raf = requestAnimationFrame(tick);
+    const beat = Animated.loop(
+      Animated.timing(phase, {
+        toValue: 1,
+        duration: WAVE_PERIOD_MS,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }),
+    );
+    const run = Animated.sequence([Animated.delay(delayMs % 500), beat]);
+    run.start();
+    return () => {
+      run.stop();
+      beat.stop();
+      phase.setValue(0);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [active, delayMs]);
+  }, [active, delayMs, phase]);
 
   if (!active) return null;
 
   return (
     <View style={styles.waveClip} pointerEvents="none">
       <View style={styles.waveRow}>
-        {Array.from({ length: WAVE_BARS }, (_, i) => {
-          const h = 1.2 + 3 * (0.5 + 0.5 * Math.sin(phase + i * 0.82));
-          return (
-            <Animated.View
-              key={i}
-              style={[styles.waveBar, { height: h, backgroundColor: color }]}
-            />
-          );
-        })}
+        {Array.from({ length: WAVE_BARS }, (_, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              styles.waveBar,
+              { height: waveBarHeight(phase, i), backgroundColor: color },
+            ]}
+          />
+        ))}
       </View>
     </View>
   );
