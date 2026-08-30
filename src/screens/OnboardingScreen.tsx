@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -68,9 +67,8 @@ const FOOD_INTRO_P2 =
 const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
-const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise', 'food-intro', 'food'];
 const MIN_FOOD_MEALS = 1;
-const INTRO_FADE_MS = 280;
+const INTRO_FADE_MS = 320;
 
 function IntroActStep({
   title,
@@ -306,9 +304,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const tableOpacity = useRef(new Animated.Value(1)).current;
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isIntroAct = INTRO_ACTS.includes(step);
-  const isCenteredAct = CENTERED_ACTS.includes(step);
-
   useEffect(() => {
     if (INTRO_ACTS.includes(step)) {
       setIntroReady(false);
@@ -320,6 +315,53 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     };
   }, []);
+
+  const goToStep = useCallback((next: Step, options?: { skipFadeOut?: boolean }) => {
+    if (introTransitioning.current) return;
+    introTransitioning.current = true;
+
+    const fadeIn = () => {
+      setStep(next);
+      introSlide.setValue(22);
+      introOpacity.setValue(0);
+      Animated.parallel([
+        Animated.timing(introOpacity, {
+          toValue: 1,
+          duration: INTRO_FADE_MS + 100,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(introSlide, {
+          toValue: 0,
+          duration: INTRO_FADE_MS + 100,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        introTransitioning.current = false;
+      });
+    };
+
+    if (options?.skipFadeOut) {
+      fadeIn();
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(introOpacity, {
+        toValue: 0,
+        duration: INTRO_FADE_MS,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(introSlide, {
+        toValue: -22,
+        duration: INTRO_FADE_MS,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(fadeIn);
+  }, [introOpacity, introSlide]);
 
   const playTableReveal = useCallback((onDone: () => void) => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
@@ -366,45 +408,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       });
     }, 2600);
   }, [chromeOpacity, tableShift, tableScale, tableOpacity]);
-
-  const transitionIntroStep = useCallback((next: Step) => {
-    if (introTransitioning.current) return;
-    introTransitioning.current = true;
-
-    Animated.parallel([
-      Animated.timing(introOpacity, {
-        toValue: 0,
-        duration: INTRO_FADE_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(introSlide, {
-        toValue: -18,
-        duration: INTRO_FADE_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setStep(next);
-      introSlide.setValue(18);
-      Animated.parallel([
-        Animated.timing(introOpacity, {
-          toValue: 1,
-          duration: INTRO_FADE_MS + 80,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(introSlide, {
-          toValue: 0,
-          duration: INTRO_FADE_MS + 80,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        introTransitioning.current = false;
-      });
-    });
-  }, [introOpacity, introSlide]);
 
   const prevWeekDays = useMemo(
     () => getPreviousWeekDays(getCurrentWeekDays()),
@@ -492,13 +495,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       return;
     }
 
-    playTableReveal(() => setStep('food-intro'));
+    playTableReveal(() => goToStep('food-intro', { skipFadeOut: true }));
   }, [
     exerciseDraft,
     exerciseIndex,
     confirmedExerciseDays,
     tableReveal,
     playTableReveal,
+    goToStep,
   ]);
 
   const finishFoodStep = useCallback(async (extraMeals?: number[][]) => {
@@ -524,16 +528,18 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     const extra = Array.from({ length: 6 }, () => randomizeExampleMeals());
     setConfirmedMealDays(extra);
     playTableReveal(() => {
+      // Короткий fade контейнера перед выходом на главный экран
+      introOpacity.setValue(0);
       void finishFoodStep(extra);
     });
-  }, [tableReveal, mealsDraft.length, playTableReveal, finishFoodStep]);
+  }, [tableReveal, mealsDraft.length, playTableReveal, finishFoodStep, introOpacity]);
 
   const renderIntroAct = () => {
     if (step === 'welcome') {
       return (
         <WelcomeStep
           onTypingComplete={() => setIntroReady(true)}
-          onStart={() => transitionIntroStep('exercise-intro')}
+          onStart={() => goToStep('exercise-intro')}
           canStart={introReady}
           busy={busy}
         />
@@ -543,7 +549,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       return (
         <ExerciseIntroStep
           onTypingComplete={() => setIntroReady(true)}
-          onContinue={() => setStep('exercise')}
+          onContinue={() => goToStep('exercise')}
           canContinue={introReady}
           busy={busy}
         />
@@ -552,7 +558,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     return (
       <FoodIntroStep
         onTypingComplete={() => setIntroReady(true)}
-        onContinue={() => setStep('food')}
+        onContinue={() => goToStep('food')}
         canContinue={introReady}
         busy={busy}
       />
@@ -736,32 +742,21 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      {isCenteredAct ? (
-        <View style={styles.introContainer}>
-          {isIntroAct ? (
-            <Animated.View
-              key={step}
-              style={{
-                width: '100%',
-                opacity: introOpacity,
-                transform: [{ translateY: introSlide }],
-              }}
-            >
-              {renderBody()}
-            </Animated.View>
-          ) : (
-            renderBody()
-          )}
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+      <View style={styles.introContainer}>
+        <Animated.View
+          key={step}
+          style={[
+            styles.stepFrame,
+            (step === 'exercise' || step === 'food') && styles.stepFrameFill,
+            {
+              opacity: introOpacity,
+              transform: [{ translateY: introSlide }],
+            },
+          ]}
         >
           {renderBody()}
-        </ScrollView>
-      )}
+        </Animated.View>
+      </View>
 
       <ConfirmDialog
         visible={pendingConfirm !== null}
@@ -783,19 +778,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: GAP,
-    gap: GAP,
-    paddingBottom: GAP * 2,
-  },
   introContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: GAP,
+  },
+  stepFrame: {
+    width: '100%',
+  },
+  stepFrameFill: {
+    flex: 1,
   },
   introInner: {
     width: '100%',
