@@ -126,6 +126,56 @@ export function useTrackerData() {
     await persist(next);
   }, [state, todayKey, foodCounter, persist]);
 
+  const undoLastExercise = useCallback(async () => {
+    if (!state) return;
+
+    const today = getDayRecord(state, todayKey);
+    const exercises = getDayExercises(today);
+    let col = -1;
+    for (let i = 2; i >= 0; i--) {
+      if (exercises[i].length > 0) {
+        col = i;
+        break;
+      }
+    }
+    if (col < 0) return;
+
+    const nextExercises: ExerciseColumns = [
+      [...exercises[0]],
+      [...exercises[1]],
+      [...exercises[2]],
+    ];
+    nextExercises[col] = nextExercises[col].slice(0, -1);
+
+    const next: AppState = {
+      ...state,
+      currentExerciseIndex: inferCurrentExerciseIndex(nextExercises),
+      days: {
+        ...state.days,
+        [todayKey]: { ...today, exercises: nextExercises },
+      },
+    };
+
+    await persist(next);
+  }, [state, todayKey, persist]);
+
+  const undoLastFood = useCallback(async () => {
+    if (!state) return;
+
+    const today = getDayRecord(state, todayKey);
+    if (today.meals.length === 0) return;
+
+    const next: AppState = {
+      ...state,
+      days: {
+        ...state.days,
+        [todayKey]: { ...today, meals: today.meals.slice(0, -1) },
+      },
+    };
+
+    await persist(next);
+  }, [state, todayKey, persist]);
+
   const clearTodayExercise = useCallback(async () => {
     if (!state) return;
 
@@ -242,6 +292,8 @@ export function useTrackerData() {
     adjustFood,
     submitExercise,
     submitFood,
+    undoLastExercise,
+    undoLastFood,
     clearTodayExercise,
     clearTodayFood,
     currentExerciseLabel,

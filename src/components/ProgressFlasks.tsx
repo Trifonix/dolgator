@@ -6,7 +6,7 @@ import {
   FLASK_FOOD_WIDTH,
   FLASK_HEIGHT,
 } from '../theme/layout';
-import { flaskPulseAccent, EXERCISE_BAND_LOW, EXERCISE_MARK_RATIO, type FlaskFill, type FlaskKind, type FoodFlaskFill } from '../utils/flaskMetrics';
+import { flaskPulseAccent, EXERCISE_BAND_LOW, EXERCISE_MARK_RATIO, FOOD_MARK_RATIO, type FlaskFill, type FlaskKind, type FoodFlaskFill } from '../utils/flaskMetrics';
 
 const TICK_GUTTER = 6;
 const PX = 2;
@@ -108,7 +108,11 @@ function SideNotch({
   hasBaseline: boolean;
 }) {
   if (!hasBaseline) return null;
-  const bottom = Math.max(2, FLASK_HEIGHT * markRatio - PX * 1.5);
+  const notchH = PX * 3;
+  const bottom = Math.min(
+    FLASK_HEIGHT - notchH,
+    Math.max(2, FLASK_HEIGHT * markRatio - PX * 1.5),
+  );
   const isLeft = side === 'left';
 
   return (
@@ -189,8 +193,8 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
 
   return (
     <View style={styles.foodWrap}>
-      <SideNotch side="left" markRatio={fill.markRatio} hasBaseline={fill.hasBaseline} />
-      <SideNotch side="right" markRatio={fill.markRatio} hasBaseline={fill.hasBaseline} />
+      <SideNotch side="left" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
+      <SideNotch side="right" markRatio={FOOD_MARK_RATIO} hasBaseline={fill.hasBaseline} />
       <View
         style={[
           styles.foodTube,

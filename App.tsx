@@ -169,8 +169,11 @@ function AppContent() {
                 value={tracker.exerciseCounter}
                 onDecrement={() => tracker.adjustExercise(-1)}
                 onIncrement={() => tracker.adjustExercise(1)}
-                onValuePress={() => openSubmitDialog('exercise')}
-                submitDisabled={tracker.isExerciseDayFullToday}
+                onValuePress={() => {
+                  if (tracker.isExerciseDayFullToday) return;
+                  openSubmitDialog('exercise');
+                }}
+                onUndoLast={() => tracker.undoLastExercise()}
                 compact
               />
               <View style={styles.versionRow}>
@@ -193,8 +196,11 @@ function AppContent() {
                 value={tracker.foodCounter}
                 onDecrement={() => tracker.adjustFood(-10)}
                 onIncrement={() => tracker.adjustFood(10)}
-                onValuePress={() => openSubmitDialog('food')}
-                submitDisabled={tracker.isFoodDayFullToday}
+                onValuePress={() => {
+                  if (tracker.isFoodDayFullToday) return;
+                  openSubmitDialog('food');
+                }}
+                onUndoLast={() => tracker.undoLastFood()}
                 compact
               />
             </View>

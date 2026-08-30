@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -8,14 +8,16 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 
+const DOUBLE_TAP_MS = 320;
+
 interface CounterControlProps {
   value: number;
   onDecrement: () => void;
   onIncrement: () => void;
   onValuePress: () => void;
+  onUndoLast: () => void;
   variant: 'exercise' | 'food';
   compact?: boolean;
-  submitDisabled?: boolean;
 }
 
 export function CounterControl({
@@ -23,15 +25,27 @@ export function CounterControl({
   onDecrement,
   onIncrement,
   onValuePress,
+  onUndoLast,
   variant,
   compact = false,
-  submitDisabled = false,
 }: CounterControlProps) {
   const palette = variant === 'exercise' ? colors.exercise : colors.food;
   const btnSize = compact ? 40 : 52;
   const valueSize = compact ? 26 : 36;
-  const valueColor = submitDisabled ? colors.textMuted : palette.primary;
-  const valueBorder = submitDisabled ? colors.border : palette.primary;
+  const pendingInc = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePlus = () => {
+    if (pendingInc.current) {
+      clearTimeout(pendingInc.current);
+      pendingInc.current = null;
+      onUndoLast();
+      return;
+    }
+    pendingInc.current = setTimeout(() => {
+      pendingInc.current = null;
+      onIncrement();
+    }, DOUBLE_TAP_MS);
+  };
 
   return (
     <View style={[styles.wrapper, compact && styles.wrapperCompact]}>
@@ -49,21 +63,19 @@ export function CounterControl({
         </Pressable>
 
         <Pressable
-          onPress={submitDisabled ? undefined : onValuePress}
-          disabled={submitDisabled}
+          onPress={onValuePress}
           style={({ pressed }) => [
             styles.valueBox,
             compact && styles.valueBoxCompact,
-            { borderColor: valueBorder, shadowColor: palette.glow },
-            submitDisabled && styles.valueBoxDisabled,
-            !submitDisabled && pressed && styles.valueBoxPressed,
+            { borderColor: palette.primary, shadowColor: palette.glow },
+            pressed && styles.valueBoxPressed,
           ]}
         >
-          <Text style={[styles.value, { fontSize: valueSize, color: valueColor }]}>{value}</Text>
+          <Text style={[styles.value, { fontSize: valueSize, color: palette.primary }]}>{value}</Text>
         </Pressable>
 
         <Pressable
-          onPress={onIncrement}
+          onPress={handlePlus}
           style={({ pressed }) => [
             styles.btn,
             { width: btnSize, height: btnSize, borderRadius: btnSize / 2, borderColor: palette.primary, shadowColor: palette.glow },
@@ -136,11 +148,6 @@ const styles = StyleSheet.create({
   valueBoxPressed: {
     opacity: 0.8,
     transform: [{ scale: 0.97 }],
-  },
-  valueBoxDisabled: {
-    opacity: 0.45,
-    shadowOpacity: 0,
-    elevation: 0,
   },
   value: {
     fontWeight: '700',

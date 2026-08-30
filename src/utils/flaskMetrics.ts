@@ -7,8 +7,10 @@ export const EXERCISE_BAND_LOW = 0.6;
 /** Черта на колбе упражнений: объём прошлой недели = 80% высоты */
 export const EXERCISE_MARK_RATIO = 0.8;
 
-/** Цель по еде: на столько меньше прошлой среднесуточной */
-export const FOOD_REDUCTION = 0.015;
+/** Засечка нормы еды на колбе */
+export const FOOD_MARK_RATIO = 0.95;
+/** Красная зона еды */
+export const FOOD_RED_RATIO = 0.99;
 
 export type FlaskKind = 'exercise' | 'food';
 
@@ -19,8 +21,8 @@ export function flaskPulseAccent(kind: FlaskKind, fillRatio: number): string {
     if (fillRatio >= EXERCISE_BAND_LOW) return '#ffd54f';
     return '#ef5350';
   }
-  if (fillRatio >= 0.98) return '#ef5350';
-  if (fillRatio >= 0.9) return '#ffd54f';
+  if (fillRatio >= FOOD_RED_RATIO) return '#ef5350';
+  if (fillRatio >= FOOD_MARK_RATIO) return '#ffd54f';
   return '#66bb6a';
 }
 
@@ -126,7 +128,7 @@ export interface FoodFlaskFill extends FlaskFill {
 
 /**
  * Сегодняшняя сумма граммов. 100% колбы = среднесуточная прошлой недели.
- * Черта = на 1.5% ниже — её лучше не пересекать.
+ * Черта = 95% — дальше жёлтая, с 99% красная.
  */
 export function foodFlaskFill(
   todaySum: number,
@@ -138,19 +140,19 @@ export function foodFlaskFill(
     return {
       fillRatio: 0,
       overflowRatio: 0,
-      markRatio: 1 - FOOD_REDUCTION,
+      markRatio: FOOD_MARK_RATIO,
       hasBaseline: false,
       overTarget: false,
     };
   }
 
-  const target = capacity * (1 - FOOD_REDUCTION);
+  const target = capacity * FOOD_MARK_RATIO;
   const raw = todaySum / capacity;
 
   return {
     fillRatio: Math.min(1, raw),
     overflowRatio: Math.max(0, raw - 1),
-    markRatio: target / capacity,
+    markRatio: FOOD_MARK_RATIO,
     hasBaseline: true,
     overTarget: todaySum > target,
   };
