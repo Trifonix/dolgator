@@ -239,8 +239,8 @@ function AppContent() {
               ghostColumns={ghostFoodColumns}
               maxRows={MAX_MEALS}
               weekCompare={{
-                current: tracker.weekFoodTotal,
-                previous: tracker.prevWeekFoodTotal,
+                current: tracker.weekFoodDailyAvg,
+                previous: tracker.prevWeekFoodDailyAvg,
               }}
               onTap={() => registerTap('food')}
               flex

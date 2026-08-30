@@ -376,6 +376,8 @@ export function useTrackerData() {
   const prevWeekFoodTotal = state
     ? sumFoodWeek(state.days, prevWeekKeys)
     : 0;
+  const weekFoodDailyAvg = Math.round(weekFoodTotal / 7);
+  const prevWeekFoodDailyAvg = Math.round(prevWeekFoodTotal / 7);
 
   const todayExercises = state
     ? getDayExercises(getDayRecord(state, todayKey))
@@ -479,6 +481,8 @@ export function useTrackerData() {
     prevWeekExerciseTotal,
     weekFoodTotal,
     prevWeekFoodTotal,
+    weekFoodDailyAvg,
+    prevWeekFoodDailyAvg,
     exerciseFlasks,
     foodFlask,
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
