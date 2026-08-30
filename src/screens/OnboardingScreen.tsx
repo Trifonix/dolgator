@@ -32,10 +32,9 @@ import {
   DEFAULT_ONBOARDING_EXERCISE,
   DEFAULT_ONBOARDING_MEALS,
   EXAMPLE_EXERCISE_BASE,
-  PREV_WEEK_FOOD_COL,
   buildOnboardingPreviewWeek,
-  buildPreviousWeekSeed,
   randomizeExampleSets,
+  randomizeFoodWeek,
   spreadExerciseColumnToExtraDays,
 } from '../utils/onboardingSeed';
 
@@ -69,7 +68,8 @@ const FOOD_INTRO_P2 =
 const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДЬ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
-const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise', 'food-intro'];
+const CENTERED_ACTS: Step[] = ['welcome', 'exercise-intro', 'exercise', 'food-intro', 'food'];
+const MIN_FOOD_MEALS = 3;
 const INTRO_FADE_MS = 280;
 
 function IntroActStep({
@@ -253,6 +253,7 @@ interface OnboardingScreenProps {
     exercise: ExerciseColumns,
     meals: number[],
     extraExerciseDays?: ExerciseColumns[],
+    extraMealDays?: number[][],
   ) => Promise<void>;
 }
 
@@ -295,7 +296,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [pendingConfirm, setPendingConfirm] = useState<'exercise' | 'food' | null>(null);
   const [busy, setBusy] = useState(false);
   const [introReady, setIntroReady] = useState(false);
-  const [exerciseReveal, setExerciseReveal] = useState(false);
+  const [tableReveal, setTableReveal] = useState(false);
   const introOpacity = useRef(new Animated.Value(1)).current;
   const introSlide = useRef(new Animated.Value(0)).current;
   const introTransitioning = useRef(false);
@@ -320,9 +321,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     };
   }, []);
 
-  const playFinalExerciseReveal = useCallback(() => {
+  const playTableReveal = useCallback((onDone: () => void) => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
-    setExerciseReveal(true);
+    setTableReveal(true);
     chromeOpacity.setValue(1);
     tableShift.setValue(48);
     tableScale.setValue(1);
@@ -356,12 +357,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }).start(() => {
-        setExerciseReveal(false);
+        setTableReveal(false);
         chromeOpacity.setValue(1);
         tableShift.setValue(0);
         tableScale.setValue(1);
         tableOpacity.setValue(1);
-        setStep('food-intro');
+        onDone();
       });
     }, 2600);
   }, [chromeOpacity, tableShift, tableScale, tableOpacity]);
@@ -439,7 +440,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const currentSetsCount = exerciseDraft[exerciseIndex].length;
   const currentExerciseReady = currentSetsCount >= MAX_SETS;
   const exerciseFull = isExerciseDayFull(exerciseDraft);
-  const mealsDone = mealsDraft.length >= 1;
 
   const applyExerciseExample = useCallback(() => {
     const sets = randomizeExampleSets(EXAMPLE_EXERCISE_BASE);
@@ -452,8 +452,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [exerciseIndex]);
 
   const applyFoodExample = useCallback(() => {
-    setMealsDraft([...DEFAULT_ONBOARDING_MEALS]);
-    setFoodCounter(DEFAULT_ONBOARDING_MEALS[DEFAULT_ONBOARDING_MEALS.length - 1]);
+    const { monday, extra } = randomizeFoodWeek(7);
+    setMealsDraft(monday);
+    setConfirmedMealDays(extra);
+    setFoodCounter(monday[monday.length - 1] ?? 250);
   }, []);
 
   const submitExerciseSet = useCallback(() => {
@@ -472,7 +474,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [foodCounter, mealsDraft.length]);
 
   const confirmCurrentExercise = useCallback(() => {
-    if (exerciseReveal) return;
+    if (tableReveal) return;
     if (exerciseDraft[exerciseIndex].length < MAX_SETS) return;
 
     const extra = spreadExerciseColumnToExtraDays(
@@ -490,47 +492,44 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       return;
     }
 
-    playFinalExerciseReveal();
+    playTableReveal(() => setStep('food-intro'));
   }, [
     exerciseDraft,
     exerciseIndex,
     confirmedExerciseDays,
-    exerciseReveal,
-    playFinalExerciseReveal,
+    tableReveal,
+    playTableReveal,
   ]);
 
-  const finishFoodStep = useCallback(async () => {
+  const finishFoodStep = useCallback(async (extraMeals?: number[][]) => {
     const templateEx = exerciseFull
       ? exerciseDraft
       : cloneExercises(DEFAULT_ONBOARDING_EXERCISE);
     const templateMeals =
       mealsDraft.length > 0 ? mealsDraft : [...DEFAULT_ONBOARDING_MEALS];
+    const extra = extraMeals ?? confirmedMealDays;
 
     setBusy(true);
     try {
-      await onComplete(templateEx, templateMeals, confirmedExerciseDays);
+      await onComplete(templateEx, templateMeals, confirmedExerciseDays, extra);
     } finally {
       setBusy(false);
     }
-  }, [exerciseDraft, exerciseFull, mealsDraft, onComplete, confirmedExerciseDays]);
+  }, [exerciseDraft, exerciseFull, mealsDraft, onComplete, confirmedExerciseDays, confirmedMealDays]);
 
-  const finishFoodPreview = useCallback(() => {
-    const templateMeals =
-      mealsDraft.length > 0 ? mealsDraft : [...DEFAULT_ONBOARDING_MEALS];
-    const templateEx = exerciseFull
-      ? exerciseDraft
-      : cloneExercises(DEFAULT_ONBOARDING_EXERCISE);
-    const fullSeed = buildPreviousWeekSeed(prevWeekKeys, templateEx, templateMeals);
-    const pseudo: AppState = { days: fullSeed } as AppState;
-    const extraMeals = PREV_WEEK_FOOD_COL.slice(1).map((colIdx) => {
-      const key = prevWeekKeys[colIdx];
-      return getDayRecord(pseudo, key).meals;
+  const confirmFoodDay = useCallback(() => {
+    if (tableReveal) return;
+    if (mealsDraft.length < MIN_FOOD_MEALS) return;
+
+    const extra =
+      confirmedMealDays.length >= 6
+        ? confirmedMealDays
+        : randomizeFoodWeek(7).extra;
+    setConfirmedMealDays(extra);
+    playTableReveal(() => {
+      void finishFoodStep(extra);
     });
-    setConfirmedMealDays(extraMeals);
-    if (mealsDraft.length === 0) {
-      setMealsDraft(templateMeals);
-    }
-  }, [exerciseDraft, exerciseFull, mealsDraft, prevWeekKeys]);
+  }, [tableReveal, mealsDraft.length, confirmedMealDays, playTableReveal, finishFoodStep]);
 
   const renderIntroAct = () => {
     if (step === 'welcome') {
@@ -572,14 +571,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'exercise':
         return (
-          <View style={[styles.workInner, exerciseReveal && styles.workInnerReveal]}>
+          <View style={[styles.workInner, tableReveal && styles.workInnerReveal]}>
             <Animated.View
               style={[
                 styles.chromeBlock,
-                exerciseReveal && styles.chromeOverlayTop,
+                tableReveal && styles.chromeOverlayTop,
                 { opacity: chromeOpacity },
               ]}
-              pointerEvents={exerciseReveal ? 'none' : 'auto'}
+              pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <Text style={styles.leadCenter}>Прошлая неделя — повторения</Text>
               <Text style={styles.hintCenter}>
@@ -611,10 +610,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             <Animated.View
               style={[
                 styles.chromeBlock,
-                exerciseReveal && styles.chromeOverlayBottom,
+                tableReveal && styles.chromeOverlayBottom,
                 { opacity: chromeOpacity },
               ]}
-              pointerEvents={exerciseReveal ? 'none' : 'auto'}
+              pointerEvents={tableReveal ? 'none' : 'auto'}
             >
               <CounterControl
                 variant="exercise"
@@ -624,24 +623,24 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onValuePress={() => setPendingConfirm('exercise')}
                 onUndoLast={() => {}}
                 onArmUndo={() => {}}
-                okMode={currentExerciseReady || exerciseReveal ? 'disabled' : 'active'}
+                okMode={currentExerciseReady || tableReveal ? 'disabled' : 'active'}
                 compact
               />
               <Pressable
                 style={[
                   styles.introPrimaryBtn,
                   { backgroundColor: FILL_BTN_COLORS[exerciseIndex] },
-                  (!currentExerciseReady || exerciseReveal) && styles.primaryBtnDisabled,
+                  (!currentExerciseReady || tableReveal) && styles.primaryBtnDisabled,
                 ]}
                 onPress={confirmCurrentExercise}
-                disabled={!currentExerciseReady || busy || exerciseReveal}
+                disabled={!currentExerciseReady || busy || tableReveal}
               >
                 <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
               </Pressable>
               <Pressable
                 style={styles.secondaryBtn}
                 onPress={applyExerciseExample}
-                disabled={exerciseReveal}
+                disabled={tableReveal}
               >
                 <Text style={styles.secondaryBtnText}>Использовать пример</Text>
               </Pressable>
@@ -651,12 +650,34 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
       case 'food':
         return (
-          <>
-            <Text style={styles.lead}>Прошлая неделя — питание</Text>
-            <Text style={styles.hint}>
-              Приём {Math.min(mealsDraft.length + 1, MAX_MEALS)} из {MAX_MEALS}
-            </Text>
-            <View style={styles.tableWrap}>
+          <View style={[styles.workInner, tableReveal && styles.workInnerReveal]}>
+            <Animated.View
+              style={[
+                styles.chromeBlock,
+                tableReveal && styles.chromeOverlayTop,
+                { opacity: chromeOpacity },
+              ]}
+              pointerEvents={tableReveal ? 'none' : 'auto'}
+            >
+              <Text style={[styles.leadCenter, { color: colors.food.primary }]}>
+                Прошлая неделя — питание
+              </Text>
+              <Text style={styles.hintCenter}>
+                {mealsDraft.length >= MIN_FOOD_MEALS
+                  ? `${mealsDraft.length} приём${mealsDraft.length === 1 ? '' : mealsDraft.length < 5 ? 'а' : 'ов'} — нажмите ЗАПОЛНИЛ`
+                  : `Приём ${Math.min(mealsDraft.length + 1, MAX_MEALS)} из ${MAX_MEALS} (нужно ${MIN_FOOD_MEALS}–4)`}
+              </Text>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.tableWrapCompact,
+                {
+                  opacity: tableOpacity,
+                  transform: [{ translateY: tableShift }, { scale: tableScale }],
+                },
+              ]}
+            >
               <WeekTable
                 variant="food"
                 weekDays={prevWeekDays}
@@ -664,35 +685,48 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 columns={buildFoodColumns(foodPreview)}
                 maxRows={MAX_MEALS}
               />
-            </View>
-            <CounterControl
-              variant="food"
-              value={foodCounter}
-              onDecrement={() => setFoodCounter((v) => Math.max(0, v - 10))}
-              onIncrement={() => setFoodCounter((v) => v + 10)}
-              onValuePress={() => setPendingConfirm('food')}
-              onUndoLast={() => {}}
-              onArmUndo={() => {}}
-              okMode={mealsDraft.length >= MAX_MEALS ? 'disabled' : 'active'}
-              compact
-            />
-            <Pressable style={styles.secondaryBtn} onPress={applyFoodExample}>
-              <Text style={styles.secondaryBtnText}>Использовать пример (250-400-500)</Text>
-            </Pressable>
-          </>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.chromeBlock,
+                tableReveal && styles.chromeOverlayBottom,
+                { opacity: chromeOpacity },
+              ]}
+              pointerEvents={tableReveal ? 'none' : 'auto'}
+            >
+              <CounterControl
+                variant="food"
+                value={foodCounter}
+                onDecrement={() => setFoodCounter((v) => Math.max(0, v - 10))}
+                onIncrement={() => setFoodCounter((v) => v + 10)}
+                onValuePress={() => setPendingConfirm('food')}
+                onUndoLast={() => {}}
+                onArmUndo={() => {}}
+                okMode={mealsDraft.length >= MAX_MEALS || tableReveal ? 'disabled' : 'active'}
+                compact
+              />
+              <Pressable
+                style={[
+                  styles.introPrimaryBtn,
+                  { backgroundColor: colors.food.dim },
+                  (mealsDraft.length < MIN_FOOD_MEALS || tableReveal) && styles.primaryBtnDisabled,
+                ]}
+                onPress={confirmFoodDay}
+                disabled={mealsDraft.length < MIN_FOOD_MEALS || busy || tableReveal}
+              >
+                <Text style={styles.primaryBtnText}>ЗАПОЛНИЛ</Text>
+              </Pressable>
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={applyFoodExample}
+                disabled={tableReveal}
+              >
+                <Text style={styles.secondaryBtnText}>Использовать пример</Text>
+              </Pressable>
+            </Animated.View>
+          </View>
         );
-    }
-  };
-
-  const primaryLabel = (() => {
-    if (step === 'food') return mealsDone ? 'Завершить настройку' : 'Принять пример и завершить';
-    return 'OK';
-  })();
-
-  const handlePrimary = () => {
-    if (step === 'food') {
-      finishFoodPreview();
-      finishFoodStep();
     }
   };
 
@@ -731,18 +765,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           {renderBody()}
         </ScrollView>
       )}
-
-      {!isCenteredAct ? (
-        <Pressable
-          style={[styles.primaryBtn, busy && styles.primaryBtnDisabled]}
-          onPress={handlePrimary}
-          disabled={busy}
-        >
-          <Text style={styles.primaryBtnText}>
-            {busy ? 'Сохранение…' : primaryLabel}
-          </Text>
-        </Pressable>
-      ) : null}
 
       <ConfirmDialog
         visible={pendingConfirm !== null}

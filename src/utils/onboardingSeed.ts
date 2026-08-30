@@ -2,8 +2,8 @@ import { DayRecord, ExerciseColumns } from '../types';
 
 /** Дни прошлой недели для тренировок: пн, ср, пт */
 export const PREV_WEEK_EXERCISE_COL = [0, 2, 4];
-/** Дни прошлой недели для питания: пн–пт */
-export const PREV_WEEK_FOOD_COL = [0, 1, 2, 3, 4];
+/** Дни прошлой недели для питания: вся неделя */
+export const PREV_WEEK_FOOD_COL = [0, 1, 2, 3, 4, 5, 6];
 
 export const DEFAULT_ONBOARDING_EXERCISE: ExerciseColumns = [
   [4, 4, 4, 4, 8],
@@ -15,6 +15,13 @@ export const DEFAULT_ONBOARDING_EXERCISE: ExerciseColumns = [
 export const EXAMPLE_EXERCISE_BASE = [6, 6, 6, 6, 12];
 
 export const DEFAULT_ONBOARDING_MEALS = [250, 400, 500];
+
+/** База примера: 4 приёма, как «400-200-450-500» */
+export const EXAMPLE_FOOD_BASE = [400, 200, 450, 500];
+
+function roundToTen(value: number): number {
+  return Math.max(50, Math.round(value / 10) * 10);
+}
 
 function cloneExerciseColumns(exercises: ExerciseColumns): ExerciseColumns {
   return [
@@ -53,7 +60,31 @@ export function randomizeExampleSets(
 function varyGrams(value: number): number {
   const delta = randomInt(-20, 20);
   const biased = Math.abs(delta) < 10 ? (delta >= 0 ? 10 : -10) : delta;
-  return Math.max(10, value + biased);
+  return roundToTen(value + biased);
+}
+
+/**
+ * 3 или 4 приёма: последний — база 500 ±100%, остальные 40–80% от него.
+ */
+export function randomizeExampleMeals(
+  baseLargest = EXAMPLE_FOOD_BASE[EXAMPLE_FOOD_BASE.length - 1],
+): number[] {
+  const count = randomInt(3, 4);
+  const largest = roundToTen(baseLargest * (0.5 + Math.random() * 1.5));
+  const others = Array.from({ length: count - 1 }, () => {
+    const ratio = 0.4 + Math.random() * 0.4;
+    return roundToTen(largest * ratio);
+  });
+  return [...others, Math.max(50, largest)];
+}
+
+/** Пн + остальные дни недели: у каждого 3–4 приёма */
+export function randomizeFoodWeek(dayCount = 7): { monday: number[]; extra: number[][] } {
+  const monday = randomizeExampleMeals();
+  const extra = Array.from({ length: Math.max(0, dayCount - 1) }, () =>
+    randomizeExampleMeals(),
+  );
+  return { monday, extra };
 }
 
 /** Пн — как ввели, ср и пт — та же колонка упражнения ±1 повтор */
