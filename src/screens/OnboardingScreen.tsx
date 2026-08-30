@@ -17,7 +17,7 @@ import {
   buildExerciseColumns,
   buildFoodColumns,
 } from '../components/WeekTable';
-import { MAX_MEALS, MAX_SETS, colors } from '../theme/colors';
+import { EXERCISE_COLUMN_COLORS, MAX_MEALS, MAX_SETS, colors } from '../theme/colors';
 import { GAP } from '../theme/layout';
 import { AppState, DayRecord, ExerciseColumns } from '../types';
 import {
@@ -70,7 +70,7 @@ const FOOD_INTRO_GROUPS: ExtraBlock[] = [
 const FOOD_INTRO_P2 =
   'На этой неделе цель — чуть меньше прошлой: если за прошлую неделю выходило ~7000 г, стремитесь не превышать ~1000 г в день и снижать объём плавно: 6990 → 6980 → 6950…';
 
-const FILL_BTN_COLORS = ['#9c27b0', '#ec407a', '#5c6bc0'] as const;
+const FILL_BTN_COLORS = EXERCISE_COLUMN_COLORS;
 const FILL_BTN_LABELS = ['НОГИ', 'ГРУДНЫЕ', 'СПИНА'] as const;
 const INTRO_ACTS: Step[] = ['welcome', 'exercise-intro', 'food-intro'];
 const MIN_FOOD_MEALS = 1;

@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, EXERCISE_COLUMN_COLORS, EXERCISE_COLUMN_GHOST } from '../theme/colors';
 import { getDayOfMonth } from '../utils/dates';
 import { ExerciseCell, ExerciseColumns } from '../types';
 import { exercisesToTableRows } from '../storage/storage';
@@ -271,9 +271,9 @@ export function WeekTable({
                               value={showActual ? value : showGhost ? ghostValue : null}
                               color={
                                 showActual
-                                  ? palette.primary
+                                  ? EXERCISE_COLUMN_COLORS[miniIdx]
                                   : showGhost
-                                    ? colors.ghostText
+                                    ? EXERCISE_COLUMN_GHOST[miniIdx]
                                     : colors.textMuted
                               }
                               style={styles.exerciseMiniCell}

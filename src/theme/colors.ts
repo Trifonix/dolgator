@@ -39,5 +39,12 @@ export const colors = {
 };
 
 export const EXERCISE_LABELS = ['ноги', 'грудные', 'спина'] as const;
+/** Подколонки таблицы повторений: ноги / грудные / спина */
+export const EXERCISE_COLUMN_COLORS = ['#e040fb', '#ff5c93', '#7b88ff'] as const;
+export const EXERCISE_COLUMN_GHOST = [
+  'rgba(224, 64, 251, 0.4)',
+  'rgba(255, 92, 147, 0.4)',
+  'rgba(123, 136, 255, 0.4)',
+] as const;
 export const MAX_MEALS = 5;
 export const MAX_SETS = 5;
