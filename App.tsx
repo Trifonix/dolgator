@@ -268,6 +268,7 @@ function AppContent() {
                 onIncrement={() => tracker.adjustFood(10)}
                 onValuePress={() => openSubmitDialog('food')}
                 onUndoLast={() => tracker.undoLastFood()}
+                incrementDisabled={tracker.isFoodIncrementBlockedToday}
                 okMode={
                   tracker.foodUndoArmed
                     ? 'undo'

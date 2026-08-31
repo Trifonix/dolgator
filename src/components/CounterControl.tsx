@@ -66,6 +66,8 @@ interface CounterControlProps {
   onUndoLast: () => void;
   okMode: OkMode;
   variant: 'exercise' | 'food';
+  /** Только «+» (режим переедания — лимит исчерпан) */
+  incrementDisabled?: boolean;
   /** Переопределяет палитру variant (для цвета текущего упражнения) */
   accentPalette?: AccentPalette;
   compact?: boolean;
@@ -79,6 +81,7 @@ export function CounterControl({
   onUndoLast,
   okMode,
   variant,
+  incrementDisabled = false,
   accentPalette,
   compact = false,
 }: CounterControlProps) {
@@ -104,8 +107,12 @@ export function CounterControl({
         : palette.primary;
 
   const sideDisabled = okMode === 'disabled';
-  const sideColor = sideDisabled ? colors.textMuted : palette.primary;
-  const sideBorder = sideDisabled ? colors.border : palette.primary;
+  const plusDisabled = sideDisabled || incrementDisabled;
+  const minusDisabled = sideDisabled;
+  const sideColor = minusDisabled ? colors.textMuted : palette.primary;
+  const sideBorder = minusDisabled ? colors.border : palette.primary;
+  const plusColor = plusDisabled ? colors.textMuted : palette.primary;
+  const plusBorder = plusDisabled ? colors.border : palette.primary;
 
   const clearPending = () => {
     if (pendingTap.current) {
@@ -137,7 +144,7 @@ export function CounterControl({
       <View style={[styles.row, compact && styles.rowCompact]}>
         <Pressable
           onPress={onDecrement}
-          disabled={sideDisabled}
+          disabled={minusDisabled}
           style={({ pressed }) => [
             styles.btn,
             {
@@ -147,8 +154,8 @@ export function CounterControl({
               borderColor: sideBorder,
               shadowColor: palette.glow,
             },
-            sideDisabled && styles.btnDisabled,
-            !sideDisabled && pressed && styles.btnPressed,
+            minusDisabled && styles.btnDisabled,
+            !minusDisabled && pressed && styles.btnPressed,
           ]}
           hitSlop={6}
         >
@@ -182,22 +189,22 @@ export function CounterControl({
 
         <Pressable
           onPress={onIncrement}
-          disabled={sideDisabled}
+          disabled={plusDisabled}
           style={({ pressed }) => [
             styles.btn,
             {
               width: btnSize,
               height: btnSize,
               borderRadius: btnSize / 2,
-              borderColor: sideBorder,
+              borderColor: plusBorder,
               shadowColor: palette.glow,
             },
-            sideDisabled && styles.btnDisabled,
-            !sideDisabled && pressed && styles.btnPressed,
+            plusDisabled && styles.btnDisabled,
+            !plusDisabled && pressed && styles.btnPressed,
           ]}
           hitSlop={6}
         >
-          <SideSymbol kind="plus" color={sideColor} btnSize={btnSize} />
+          <SideSymbol kind="plus" color={plusColor} btnSize={btnSize} />
         </Pressable>
       </View>
     </View>

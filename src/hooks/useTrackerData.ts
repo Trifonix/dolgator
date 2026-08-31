@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState as RNAppState } from 'react-native';
 import {
   getDayExercises,
@@ -36,6 +36,13 @@ import {
   foodWeekTarget,
   prevWeekTotals,
 } from '../utils/weeklyTargets';
+import {
+  armOverageIfApproaching,
+  foodCounterAfterAdjust,
+  isFoodOveragePlusBlocked,
+  resetFoodOverageState,
+  suggestNextFoodCounter,
+} from '../utils/foodOverage';
 
 function syncExerciseIndex(state: AppState, todayKey: string): AppState {
   const exercises = getDayExercises(getDayRecord(state, todayKey));
@@ -46,23 +53,6 @@ function syncExerciseIndex(state: AppState, todayKey: string): AppState {
 }
 
 const UNDO_WINDOW_MS = 60_000;
-
-/** Шаг счётчика грамм на главном экране */
-const FOOD_COUNTER_STEP = 10;
-
-/** Если до нормы осталось меньше последнего приёма — в OK половина остатка (floor), до десятков вниз. */
-function suggestNextFoodCounter(
-  todaySumAfterMeal: number,
-  prevWeekDailyAvg: number,
-  lastMealGrams: number,
-): number | null {
-  const norm = Math.floor(prevWeekDailyAvg);
-  if (norm <= 0) return null;
-  const remaining = Math.max(0, norm - todaySumAfterMeal);
-  if (remaining >= lastMealGrams) return null;
-  const half = Math.floor(remaining / 2);
-  return Math.floor(half / FOOD_COUNTER_STEP) * FOOD_COUNTER_STEP;
-}
 
 function msUntilNextMidnight(from: Date): number {
   const next = new Date(from);
@@ -75,6 +65,8 @@ export function useTrackerData() {
   const [state, setState] = useState<AppState | null>(null);
   const [exerciseCounter, setExerciseCounter] = useState(DEFAULT_STATE.lastExerciseRep);
   const [foodCounter, setFoodCounter] = useState(DEFAULT_STATE.lastMealGrams);
+  const [foodOverageArmed, setFoodOverageArmed] = useState(false);
+  const [foodOveragePlusLeft, setFoodOveragePlusLeft] = useState(0);
   const [exerciseUndoUntil, setExerciseUndoUntil] = useState(0);
   const [foodUndoUntil, setFoodUndoUntil] = useState(0);
   const [clock, setClock] = useState(Date.now());
@@ -121,6 +113,8 @@ export function useTrackerData() {
       setState(synced);
       setExerciseCounter(getLastExerciseRepFromHistory(synced));
       setFoodCounter(getLastMealGramsFromHistory(synced));
+      setFoodOverageArmed(false);
+      setFoodOveragePlusLeft(0);
     });
   }, [todayKey]);
 
@@ -141,9 +135,67 @@ export function useTrackerData() {
     setExerciseCounter((v) => Math.max(0, v + delta));
   }, []);
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const todayKeyRef = useRef(todayKey);
+  todayKeyRef.current = todayKey;
+  const prevWeekKeysRef = useRef(prevWeekKeys);
+  prevWeekKeysRef.current = prevWeekKeys;
+  const foodOverageArmedRef = useRef(foodOverageArmed);
+  foodOverageArmedRef.current = foodOverageArmed;
+  const foodOveragePlusLeftRef = useRef(foodOveragePlusLeft);
+  foodOveragePlusLeftRef.current = foodOveragePlusLeft;
+
+  const applyFoodOverageState = useCallback(
+    (armed: boolean, plusLeft: number) => {
+      setFoodOverageArmed(armed);
+      setFoodOveragePlusLeft(plusLeft);
+    },
+    [],
+  );
+
+  const syncFoodOverageAfterCounter = useCallback(
+    (todaySum: number, counter: number, norm: number) => {
+      const { overageArmed, overagePlusLeft } = armOverageIfApproaching(
+        todaySum,
+        counter,
+        norm,
+        false,
+        0,
+      );
+      applyFoodOverageState(overageArmed, overagePlusLeft);
+    },
+    [applyFoodOverageState],
+  );
+
   const adjustFood = useCallback((delta: number) => {
-    setFoodCounter((v) => Math.max(0, v + delta));
-  }, []);
+    setFoodUndoUntil(0);
+
+    setFoodCounter((v) => {
+      const st = stateRef.current;
+      if (!st) {
+        return Math.max(0, v + delta);
+      }
+
+      const today = getDayRecord(st, todayKeyRef.current);
+      const todaySum = sumMealsDay(today.meals);
+      const norm = prevWeekFoodDailyAverage(
+        st.days,
+        prevWeekKeysRef.current,
+      ) ?? 0;
+
+      const { next, overageArmed, overagePlusLeft } = foodCounterAfterAdjust(
+        todaySum,
+        norm,
+        v,
+        delta,
+        foodOverageArmedRef.current,
+        foodOveragePlusLeftRef.current,
+      );
+      applyFoodOverageState(overageArmed, overagePlusLeft);
+      return next;
+    });
+  }, [applyFoodOverageState]);
 
   /** OK — записать повторение в колонку текущего упражнения */
   const submitExercise = useCallback(async () => {
@@ -209,13 +261,13 @@ export function useTrackerData() {
     };
 
     await persist(next);
-    if (suggested != null) {
-      setFoodCounter(suggested);
-    }
+    const nextCounter = suggested ?? justAdded;
+    setFoodCounter(nextCounter);
+    syncFoodOverageAfterCounter(newSum, nextCounter, norm);
     if (meals.length >= MAX_MEALS) {
       setFoodUndoUntil(Date.now() + UNDO_WINDOW_MS);
     }
-  }, [state, todayKey, foodCounter, persist, prevWeekKeys]);
+  }, [state, todayKey, foodCounter, persist, prevWeekKeys, syncFoodOverageAfterCounter]);
 
   const armExerciseUndo = useCallback(() => {
     setExerciseUndoUntil((until) =>
@@ -279,7 +331,11 @@ export function useTrackerData() {
 
     await persist(next);
     setFoodUndoUntil(0);
-  }, [state, todayKey, persist]);
+    const meals = today.meals.slice(0, -1);
+    const todaySum = sumMealsDay(meals);
+    const norm = prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? 0;
+    syncFoodOverageAfterCounter(todaySum, foodCounter, norm);
+  }, [state, todayKey, foodCounter, persist, prevWeekKeys, syncFoodOverageAfterCounter]);
 
   const clearTodayExercise = useCallback(async () => {
     if (!state) return;
@@ -315,6 +371,9 @@ export function useTrackerData() {
 
     await persist(next);
     setFoodUndoUntil(0);
+    const reset = resetFoodOverageState();
+    setFoodOverageArmed(reset.overageArmed);
+    setFoodOveragePlusLeft(reset.overagePlusLeft);
   }, [state, todayKey, persist]);
 
   const completeOnboarding = useCallback(
@@ -375,6 +434,9 @@ export function useTrackerData() {
       await persist(next);
       setExerciseCounter(lastRep);
       setFoodCounter(lastMeal);
+      const reset = resetFoodOverageState();
+      setFoodOverageArmed(reset.overageArmed);
+      setFoodOveragePlusLeft(reset.overagePlusLeft);
     },
     [state, prevWeekKeys, todayKey, persist],
   );
@@ -521,6 +583,11 @@ export function useTrackerData() {
     fallbackFoodDay,
   );
 
+  const isFoodIncrementBlockedToday = isFoodOveragePlusBlocked(
+    foodOverageArmed,
+    foodOveragePlusLeft,
+  );
+
   const foodWeekTargetValue = state?.onboardingCompleted
     ? foodWeekTarget(prevTotals.food)
     : null;
@@ -534,6 +601,9 @@ export function useTrackerData() {
     setState(synced);
     setExerciseCounter(getLastExerciseRepFromHistory(synced));
     setFoodCounter(getLastMealGramsFromHistory(synced));
+    const reset = resetFoodOverageState();
+    setFoodOverageArmed(reset.overageArmed);
+    setFoodOveragePlusLeft(reset.overagePlusLeft);
   }, [todayKey]);
 
   return {
@@ -559,6 +629,7 @@ export function useTrackerData() {
     todayExerciseSetsCount,
     isExerciseDayFullToday,
     isFoodDayFullToday,
+    isFoodIncrementBlockedToday,
     exerciseUndoArmed,
     foodUndoArmed,
     weekExerciseData,
