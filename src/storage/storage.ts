@@ -9,7 +9,30 @@ import {
 } from '../types';
 import { MAX_SETS } from '../theme/colors';
 import { STORAGE_KEY } from '../utils/dates';
+import { hasTrackerData } from '../utils/onboarding';
 import { tryDevAutoImportState } from './devTransfer';
+
+function normalizeLoadedState(parsed: AppState): AppState {
+  const state: AppState = {
+    ...DEFAULT_STATE,
+    ...parsed,
+    days: parsed.days ?? {},
+  };
+  if (!state.onboardingCompleted && hasTrackerData(state)) {
+    return { ...state, onboardingCompleted: true };
+  }
+  return state;
+}
+
+async function finalizeLoadedState(
+  parsed: AppState,
+  state: AppState,
+): Promise<AppState> {
+  if (!parsed.onboardingCompleted && state.onboardingCompleted) {
+    await saveState(state);
+  }
+  return state;
+}
 
 export async function loadState(): Promise<AppState> {
   try {
@@ -17,19 +40,17 @@ export async function loadState(): Promise<AppState> {
       const imported = await tryDevAutoImportState();
       if (imported) {
         const merged = mergeImportedState(imported);
-        await saveState(merged);
-        return merged;
+        const state = normalizeLoadedState(merged);
+        await saveState(state);
+        return state;
       }
     }
 
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw) as AppState;
-    return {
-      ...DEFAULT_STATE,
-      ...parsed,
-      days: parsed.days ?? {},
-    };
+    const state = normalizeLoadedState(parsed);
+    return finalizeLoadedState(parsed, state);
   } catch {
     return { ...DEFAULT_STATE };
   }

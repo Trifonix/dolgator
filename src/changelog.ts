@@ -46,6 +46,13 @@ export function getChangelogSections(entry: ChangelogEntry): ChangelogSection[] 
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.9',
+    date: '2026-08-31',
+    patches: [
+      'Старые пользователи: призрак прошлой недели и цель по граммам, если есть записи, но не был пройден мастер',
+    ],
+  },
+  {
     version: '1.0.8',
     date: '2026-08-31',
     global: ['Expo SDK 54 — совместимость с Expo Go из Play Store'],
