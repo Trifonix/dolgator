@@ -7,9 +7,9 @@ export function formatDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Понедельник — воскресенье текущей недели */
-export function getCurrentWeekDays(): Date[] {
-  const today = new Date();
+/** Понедельник — воскресенье недели, содержащей asOf */
+export function getCurrentWeekDays(asOf: Date = new Date()): Date[] {
+  const today = new Date(asOf);
   today.setHours(0, 0, 0, 0);
 
   const day = today.getDay();
@@ -22,6 +22,11 @@ export function getCurrentWeekDays(): Date[] {
     d.setDate(monday.getDate() + i);
     return d;
   });
+}
+
+/** Ключ понедельника недели — для пересчёта колонок при смене недели */
+export function getWeekStartKey(asOf: Date = new Date()): string {
+  return formatDateKey(getCurrentWeekDays(asOf)[0]);
 }
 
 export function getDayOfMonth(date: Date): number {

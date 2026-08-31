@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AppState as RNAppState } from 'react-native';
 import {
   getDayExercises,
   getDayRecord,
@@ -15,7 +16,7 @@ import {
 } from '../storage/storage';
 import { AppState, DEFAULT_STATE, EMPTY_EXERCISES, ExerciseColumns } from '../types';
 import { colors, EXERCISE_LABELS, MAX_MEALS, MAX_SETS } from '../theme/colors';
-import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays } from '../utils/dates';
+import { formatDateKey, getCurrentWeekDays, getPreviousWeekDays, getWeekStartKey } from '../utils/dates';
 import {
   exerciseDailySums,
   exerciseFlaskFill,
@@ -45,6 +46,13 @@ function syncExerciseIndex(state: AppState, todayKey: string): AppState {
 
 const UNDO_WINDOW_MS = 60_000;
 
+function msUntilNextMidnight(from: Date): number {
+  const next = new Date(from);
+  next.setDate(next.getDate() + 1);
+  next.setHours(0, 0, 2, 0);
+  return Math.max(1000, next.getTime() - from.getTime());
+}
+
 export function useTrackerData() {
   const [state, setState] = useState<AppState | null>(null);
   const [exerciseCounter, setExerciseCounter] = useState(DEFAULT_STATE.lastExerciseRep);
@@ -52,8 +60,34 @@ export function useTrackerData() {
   const [exerciseUndoUntil, setExerciseUndoUntil] = useState(0);
   const [foodUndoUntil, setFoodUndoUntil] = useState(0);
   const [clock, setClock] = useState(Date.now());
+  /** Обновляется при возврате в приложение и после полночи — чтобы неделя не «застывала» */
+  const [calendarNow, setCalendarNow] = useState(() => new Date());
 
-  const weekDays = useMemo(() => getCurrentWeekDays(), []);
+  useEffect(() => {
+    const tick = () => setCalendarNow(new Date());
+    let midTimer: ReturnType<typeof setTimeout>;
+    const scheduleMidnight = () => {
+      midTimer = setTimeout(() => {
+        tick();
+        scheduleMidnight();
+      }, msUntilNextMidnight(new Date()));
+    };
+    scheduleMidnight();
+    const sub = RNAppState.addEventListener('change', (next) => {
+      if (next === 'active') tick();
+    });
+    return () => {
+      sub.remove();
+      clearTimeout(midTimer);
+    };
+  }, []);
+
+  const todayKey = formatDateKey(calendarNow);
+  const weekStartKey = getWeekStartKey(calendarNow);
+  const weekDays = useMemo(
+    () => getCurrentWeekDays(calendarNow),
+    [weekStartKey],
+  );
   const weekKeys = useMemo(
     () => weekDays.map((d) => formatDateKey(d)),
     [weekDays],
@@ -62,7 +96,6 @@ export function useTrackerData() {
     () => getPreviousWeekDays(weekDays).map((d) => formatDateKey(d)),
     [weekDays],
   );
-  const todayKey = formatDateKey(new Date());
 
   useEffect(() => {
     loadState().then((loaded) => {
@@ -392,7 +425,9 @@ export function useTrackerData() {
     ? foodDailyAverage(state.days, weekKeys)
     : null;
   const weekFoodDailyAvg = weekFoodProjected != null ? Math.floor(weekFoodProjected) : 0;
-  const prevWeekFoodDailyAvg = Math.floor(prevWeekFoodTotal / 7);
+  const prevWeekFoodDailyAvg = state
+    ? Math.floor(prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? prevWeekFoodTotal / 7)
+    : 0;
 
   const todayExercises = state
     ? getDayExercises(getDayRecord(state, todayKey))
