@@ -40,6 +40,7 @@ import {
   armOverageIfApproaching,
   foodCounterAfterAdjust,
   isFoodOveragePlusBlocked,
+  isFoodRedZoneMealLimitReached,
   resetFoodOverageState,
   suggestNextFoodCounter,
 } from '../utils/foodOverage';
@@ -241,10 +242,12 @@ export function useTrackerData() {
     const today = getDayRecord(state, todayKey);
     if (today.meals.length >= MAX_MEALS) return;
 
+    const norm = prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? 0;
+    if (isFoodRedZoneMealLimitReached(today.meals, norm)) return;
+
     const justAdded = foodCounter;
     const meals = [...today.meals, justAdded];
     const newSum = sumMealsDay(meals);
-    const norm = prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? 0;
     const suggested = suggestNextFoodCounter(newSum, norm, justAdded);
     const nextMealGrams = suggested ?? justAdded;
 
@@ -519,6 +522,14 @@ export function useTrackerData() {
     ? Math.floor(prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? prevWeekFoodTotal / 7)
     : 0;
 
+  const foodRedZoneMealLimitReached =
+    state != null &&
+    prevWeekFoodDailyAvg > 0 &&
+    isFoodRedZoneMealLimitReached(
+      getDayRecord(state, todayKey).meals,
+      prevWeekFoodDailyAvg,
+    );
+
   const todayExercises = state
     ? getDayExercises(getDayRecord(state, todayKey))
     : EMPTY_EXERCISES;
@@ -629,6 +640,7 @@ export function useTrackerData() {
     todayExerciseSetsCount,
     isExerciseDayFullToday,
     isFoodDayFullToday,
+    foodRedZoneMealLimitReached,
     isFoodIncrementBlockedToday,
     exerciseUndoArmed,
     foodUndoArmed,

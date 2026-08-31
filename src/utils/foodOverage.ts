@@ -1,10 +1,43 @@
-import { FOOD_MARK_RATIO } from './flaskMetrics';
+import { FOOD_MARK_RATIO, FOOD_RED_RATIO } from './flaskMetrics';
 
 /** Шаг «−» / «+» на главном экране */
 export const FOOD_COUNTER_STEP = 10;
 
 /** Доп. нажатий «+» в скрытом режиме переедания */
 export const FOOD_OVERAGE_PLUS_BUDGET = 20;
+
+/** Записанная сумма в красной зоне (≥100% нормы — как колба) */
+export function isRecordedSumInRedZone(todaySum: number, norm: number): boolean {
+  const n = Math.floor(norm);
+  if (n <= 0) return false;
+  return todaySum >= Math.floor(n * FOOD_RED_RATIO);
+}
+
+/**
+ * Сколько приёмов уже «отработали» красную зону (сумма после приёма ≥ нормы).
+ * После первого такого приёма новые записи запрещены.
+ */
+export function countMealsWhileInRedZone(
+  meals: number[],
+  norm: number,
+): number {
+  const n = Math.floor(norm);
+  if (n <= 0) return 0;
+  let sum = 0;
+  let count = 0;
+  for (const meal of meals) {
+    sum += meal;
+    if (sum >= n) count += 1;
+  }
+  return count;
+}
+
+export function isFoodRedZoneMealLimitReached(
+  meals: number[],
+  norm: number,
+): boolean {
+  return countMealsWhileInRedZone(meals, norm) >= 1;
+}
 
 /** Порог «у красной границы» — как жёлтая засечка колбы (96% нормы) */
 export function isApproachingRedBoundary(

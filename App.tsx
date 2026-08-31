@@ -272,7 +272,8 @@ function AppContent() {
                 okMode={
                   tracker.foodUndoArmed
                     ? 'undo'
-                    : tracker.isFoodDayFullToday
+                    : tracker.isFoodDayFullToday ||
+                        tracker.foodRedZoneMealLimitReached
                       ? 'disabled'
                       : 'active'
                 }
