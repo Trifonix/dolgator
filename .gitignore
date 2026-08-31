@@ -33,3 +33,5 @@ local-dev/
 # Локальный генератор демо-роликов (не публикуем)
 make-demo-video/
 make-demo-video/**
+
+build/
