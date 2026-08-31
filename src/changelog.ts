@@ -46,6 +46,18 @@ export function getChangelogSections(entry: ChangelogEntry): ChangelogSection[] 
 /** История изменений — дублирует CHANGELOG.md для экрана в приложении */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.8',
+    date: '2026-08-31',
+    global: ['Expo SDK 54 — совместимость с Expo Go из Play Store'],
+    features: [
+      'История: долгий тап по колбе ПОВТОРЫ / ГРАММЫ → таблицы за все недели в памяти',
+      'Скрытый перенос данных: 5 тапов по номеру версии → экспорт/импорт JSON',
+    ],
+    patches: [
+      'Понедельник: неделя и призрак прошлой недели обновляются после полночи и при возврате в приложение',
+    ],
+  },
+  {
     version: '1.0.7',
     date: '2026-08-30',
     features: [

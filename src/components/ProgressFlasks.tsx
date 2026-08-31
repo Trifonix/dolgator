@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/fonts';
 import {
@@ -355,13 +355,19 @@ function FlaskCaption({
 
 interface ExerciseFlasksProps {
   fills: [FlaskFill, FlaskFill, FlaskFill];
+  onLongPress?: () => void;
 }
 
-export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
+export function ExerciseFlasks({ fills, onLongPress }: ExerciseFlasksProps) {
   const [h, setH] = useState(0);
 
   return (
-    <View style={styles.flaskWithCaption}>
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={550}
+      disabled={!onLongPress}
+      style={styles.flaskWithCaption}
+    >
       <View
         style={styles.exerciseFlask}
         onLayout={(e) => setH(Math.ceil(e.nativeEvent.layout.height))}
@@ -382,20 +388,26 @@ export function ExerciseFlasks({ fills }: ExerciseFlasksProps) {
         </View>
       </View>
       <FlaskCaption word="ПОВТОРЫ" color={colors.flaskCaptionExercise} flaskHeight={h || FLASK_HEIGHT} />
-    </View>
+    </Pressable>
   );
 }
 
 interface FoodFlaskProps {
   fill: FoodFlaskFill;
+  onLongPress?: () => void;
 }
 
-export function FoodFlask({ fill }: FoodFlaskProps) {
+export function FoodFlask({ fill, onLongPress }: FoodFlaskProps) {
   const [h, setH] = useState(0);
   const fillHeight = useFillHeight(fill.fillRatio, h);
 
   return (
-    <View style={styles.flaskWithCaption}>
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={550}
+      disabled={!onLongPress}
+      style={styles.flaskWithCaption}
+    >
       <FlaskCaption word="ГРАММЫ" color={colors.flaskCaptionFood} flaskHeight={h || FLASK_HEIGHT} />
       <View style={styles.foodWrap}>
         <SideNotch
@@ -425,7 +437,7 @@ export function FoodFlask({ fill }: FoodFlaskProps) {
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -2,3 +2,14 @@ node_modules/
 .git/
 .expo/
 *.log
+.tools/
+device-tests/
+local-dev/
+backup.ab
+android/
+credentials.json
+credentials/
+*.apk
+*.aab
+*.jks
+*.keystore

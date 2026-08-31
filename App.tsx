@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -21,6 +22,8 @@ import {
 import { useTableGestures } from './src/hooks/useTableGestures';
 import { useTrackerData } from './src/hooks/useTrackerData';
 import { ChangelogScreen } from './src/screens/ChangelogScreen';
+import { DevTransferScreen } from './src/screens/DevTransferScreen';
+import { HistoryScreen } from './src/screens/HistoryScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { colors, MAX_MEALS, MAX_SETS } from './src/theme/colors';
 import { fullScreen, ANDROID_NAV_BAR_MIN, CENTER_CTRL_ROW_WIDTH, GAP } from './src/theme/layout';
@@ -52,8 +55,13 @@ function AppContent() {
       : insets.bottom;
   const [dialog, setDialog] = useState<DialogState>(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showDevTransfer, setShowDevTransfer] = useState(false);
+  const [historyVariant, setHistoryVariant] = useState<TableVariant | null>(null);
   /** Секрет истории: 5 тапов верх → Нет → 5 тапов низ → Нет (только clear-диалоги) */
   const awaitingClearFoodNoRef = useRef(false);
+
+  /** Секрет: 5 тапов по номеру версии → экран переноса данных */
+  const versionExportTapsRef = useRef(0);
 
   const resetChangelogSequence = useCallback(() => {
     awaitingClearFoodNoRef.current = false;
@@ -66,6 +74,13 @@ function AppContent() {
 
   const openClearDialog = useCallback((variant: TableVariant) => {
     setDialog({ kind: 'clear', variant });
+  }, []);
+
+  const onVersionTap = useCallback(() => {
+    versionExportTapsRef.current += 1;
+    if (versionExportTapsRef.current < 5) return;
+    versionExportTapsRef.current = 0;
+    setShowDevTransfer(true);
   }, []);
 
   const { registerTap } = useTableGestures({ onClear: openClearDialog });
@@ -141,6 +156,33 @@ function AppContent() {
     );
   }
 
+  if (showDevTransfer && tracker.appState) {
+    return (
+      <MobileScreen>
+        <StatusBar style="light" />
+        <DevTransferScreen
+          state={tracker.appState}
+          onApplied={tracker.applyImportedState}
+          onClose={() => setShowDevTransfer(false)}
+        />
+      </MobileScreen>
+    );
+  }
+
+  if (historyVariant && tracker.appState) {
+    return (
+      <MobileScreen>
+        <StatusBar style="light" />
+        <HistoryScreen
+          variant={historyVariant}
+          state={tracker.appState}
+          todayKey={tracker.todayKey}
+          onClose={() => setHistoryVariant(null)}
+        />
+      </MobileScreen>
+    );
+  }
+
   const exerciseColumns = buildExerciseColumns(tracker.weekExerciseData);
   const foodColumns = buildFoodColumns(tracker.weekFoodData);
   const ghostExerciseColumns = buildExerciseColumns(tracker.ghostExerciseData);
@@ -176,7 +218,10 @@ function AppContent() {
           </View>
 
           <View style={styles.centerBand}>
-            <ExerciseFlasks fills={tracker.exerciseFlasks} />
+            <ExerciseFlasks
+              fills={tracker.exerciseFlasks}
+              onLongPress={() => setHistoryVariant('exercise')}
+            />
             <View style={styles.centerColumn}>
               <CounterControl
                 variant="exercise"
@@ -199,10 +244,13 @@ function AppContent() {
                 <Text style={[styles.versionAppName, styles.versionSlotStart]}>
                   {APP_NAME}
                 </Text>
-                <View style={[styles.versionPair, styles.versionSlotMid]}>
+                <Pressable
+                  style={[styles.versionPair, styles.versionSlotMid]}
+                  onPress={onVersionTap}
+                >
                   <Text style={styles.versionV}>v</Text>
                   <Text style={styles.versionNumber}>{APP_VERSION}</Text>
-                </View>
+                </Pressable>
                 <Text style={[styles.versionDate, styles.versionSlotMid]}>
                   {formatLastCommit(LAST_COMMIT_AT)}
                 </Text>
@@ -230,7 +278,10 @@ function AppContent() {
                 compact
               />
             </View>
-            <FoodFlask fill={tracker.foodFlask} />
+            <FoodFlask
+              fill={tracker.foodFlask}
+              onLongPress={() => setHistoryVariant('food')}
+            />
           </View>
 
           <View style={styles.half}>

@@ -8,6 +8,8 @@ dist/
 npm-debug.*
 *.jks
 *.keystore
+credentials.json
+credentials/
 *.p8
 *.p12
 *.key
@@ -21,6 +23,12 @@ web-build/
 .idea/
 .vscode/
 Thumbs.db
+backup.ab
+
+# Локальный tooling / артефакты (не публикуем)
+.tools/
+device-tests/
+local-dev/
 
 # Локальный генератор демо-роликов (не публикуем)
 make-demo-video/

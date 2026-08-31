@@ -8,6 +8,7 @@ import {
   inferCurrentExerciseIndex,
   isExerciseDayFull,
   loadState,
+  mergeImportedState,
   saveState,
   sumExerciseDay,
   sumExerciseWeek,
@@ -501,6 +502,13 @@ export function useTrackerData() {
     ? exerciseCounterAccent(todayExercises, state.currentExerciseIndex)
     : colors.exercise;
 
+  const applyImportedState = useCallback((imported: AppState) => {
+    const synced = syncExerciseIndex(imported, todayKey);
+    setState(synced);
+    setExerciseCounter(getLastExerciseRepFromHistory(synced));
+    setFoodCounter(getLastMealGramsFromHistory(synced));
+  }, [todayKey]);
+
   return {
     ready: state !== null,
     needsOnboarding: state ? needsOnboarding(state) : false,
@@ -543,5 +551,7 @@ export function useTrackerData() {
     foodFlask,
     currentExerciseIndex: state?.currentExerciseIndex ?? 0,
     exerciseAccent,
+    appState: state,
+    applyImportedState,
   };
 }

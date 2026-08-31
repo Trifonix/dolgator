@@ -9,9 +9,19 @@ import {
 } from '../types';
 import { MAX_SETS } from '../theme/colors';
 import { STORAGE_KEY } from '../utils/dates';
+import { tryDevAutoImportState } from './devTransfer';
 
 export async function loadState(): Promise<AppState> {
   try {
+    if (__DEV__) {
+      const imported = await tryDevAutoImportState();
+      if (imported) {
+        const merged = mergeImportedState(imported);
+        await saveState(merged);
+        return merged;
+      }
+    }
+
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw) as AppState;
@@ -27,6 +37,14 @@ export async function loadState(): Promise<AppState> {
 
 export async function saveState(state: AppState): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+export function mergeImportedState(imported: AppState): AppState {
+  return {
+    ...DEFAULT_STATE,
+    ...imported,
+    days: imported.days ?? {},
+  };
 }
 
 export function getDayRecord(state: AppState, dateKey: string): DayRecord {
