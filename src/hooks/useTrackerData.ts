@@ -47,6 +47,23 @@ function syncExerciseIndex(state: AppState, todayKey: string): AppState {
 
 const UNDO_WINDOW_MS = 60_000;
 
+/** Шаг счётчика грамм на главном экране */
+const FOOD_COUNTER_STEP = 10;
+
+/** Если до нормы осталось меньше последнего приёма — в OK половина остатка (floor), до десятков вниз. */
+function suggestNextFoodCounter(
+  todaySumAfterMeal: number,
+  prevWeekDailyAvg: number,
+  lastMealGrams: number,
+): number | null {
+  const norm = Math.floor(prevWeekDailyAvg);
+  if (norm <= 0) return null;
+  const remaining = Math.max(0, norm - todaySumAfterMeal);
+  if (remaining >= lastMealGrams) return null;
+  const half = Math.floor(remaining / 2);
+  return Math.floor(half / FOOD_COUNTER_STEP) * FOOD_COUNTER_STEP;
+}
+
 function msUntilNextMidnight(from: Date): number {
   const next = new Date(from);
   next.setDate(next.getDate() + 1);
@@ -172,23 +189,33 @@ export function useTrackerData() {
     const today = getDayRecord(state, todayKey);
     if (today.meals.length >= MAX_MEALS) return;
 
+    const justAdded = foodCounter;
+    const meals = [...today.meals, justAdded];
+    const newSum = sumMealsDay(meals);
+    const norm = prevWeekFoodDailyAverage(state.days, prevWeekKeys) ?? 0;
+    const suggested = suggestNextFoodCounter(newSum, norm, justAdded);
+    const nextMealGrams = suggested ?? justAdded;
+
     const next: AppState = {
       ...state,
-      lastMealGrams: foodCounter,
+      lastMealGrams: nextMealGrams,
       days: {
         ...state.days,
         [todayKey]: {
           ...today,
-          meals: [...today.meals, foodCounter],
+          meals,
         },
       },
     };
 
     await persist(next);
-    if ([...today.meals, foodCounter].length >= MAX_MEALS) {
+    if (suggested != null) {
+      setFoodCounter(suggested);
+    }
+    if (meals.length >= MAX_MEALS) {
       setFoodUndoUntil(Date.now() + UNDO_WINDOW_MS);
     }
-  }, [state, todayKey, foodCounter, persist]);
+  }, [state, todayKey, foodCounter, persist, prevWeekKeys]);
 
   const armExerciseUndo = useCallback(() => {
     setExerciseUndoUntil((until) =>
